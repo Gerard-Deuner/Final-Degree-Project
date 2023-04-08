@@ -164,8 +164,8 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       
       futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
       atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = "ident", sumCounts, ID_column= "peakID")
-      
-      colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] = paste0("cluster", colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)])
+      print(colnames(atac.pseudobulk.clean))
+      #colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] = paste0(colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)])
       
       # Replace the first hyphen with a colon
       atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
@@ -460,8 +460,7 @@ runGRaNIE_batchMode <- function (datasetName,
                                  peak_gene.fdr.threshold = 0.1,
                                  runNetworkAnalyses = FALSE, 
                                  forceRerun = TRUE,
-                                 correlation.method, # pearson or spearman
-                                 dataset # timecourse or combined
+                                 correlation.method # pearson or spearman
                                  ){
   
   
@@ -496,6 +495,9 @@ runGRaNIE_batchMode <- function (datasetName,
           file_in_rna  = paste0(inputDir, "/rna.pseudobulkFromClusters_res", clusterResolution, ".tsv.gz")
           file_in_atac = paste0(inputDir, "/atac.pseudobulkFromClusters_res", clusterResolution, ".tsv.gz")
           file_metadata = paste0(inputDir, "/metadata_res", clusterResolution, ".tsv.gz")
+          
+          print(colnames(file_in_rna))
+          print(colnames(file_in_atac))
           
           GRN = runGRaNIE(  dir_output, 
                             datasetName = paste0(datasetName, "_pseudobulk_res", clusterResolution),
@@ -587,6 +589,8 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       outputFolder = dir_output,
                       genomeAssembly = genomeAssembly)
   
+  # adapt names so they match!
+  names(countsATAC)[2:nrow(countsATAC)] <- names(countsRNA)[2:nrow(countsRNA)]
   
   GRN = addData(GRN,
                 counts_peaks = countsATAC, normalization_peaks = normalization_peaks, idColumn_peaks = idColumn_peaks,
@@ -654,7 +658,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   
   GRN = addConnections_peak_gene(GRN,
                                  overlapTypeGene = overlapTypeGene,
-                                 corMethod = "spearman", shuffleRNACounts = TRUE,
+                                 corMethod = correlation.method, shuffleRNACounts = TRUE,
                                  promoterRange = promoterRange, TADs = NULL,
                                  nCores = nCores, plotDiagnosticPlots = TRUE,
                                  forceRerun = forceRerun)
