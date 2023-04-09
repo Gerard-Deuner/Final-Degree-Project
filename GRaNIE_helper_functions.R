@@ -165,7 +165,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
       atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = "ident", sumCounts, ID_column= "peakID")
       print(colnames(atac.pseudobulk.clean))
-      #colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] = paste0(colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)])
+      colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] = paste0(colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)])
       
       # Replace the first hyphen with a colon
       atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
@@ -590,7 +590,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       genomeAssembly = genomeAssembly)
   
   # adapt names so they match!
-  names(countsATAC)[2:nrow(countsATAC)] <- names(countsRNA)[2:nrow(countsRNA)]
+  colnames(countsATAC)[2:ncol(countsATAC)] <- colnames(countsRNA)[2:ncol(countsRNA)]
   
   GRN = addData(GRN,
                 counts_peaks = countsATAC, normalization_peaks = normalization_peaks, idColumn_peaks = idColumn_peaks,
