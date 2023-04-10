@@ -116,6 +116,12 @@ eQTL.FDR <- 0.3
 # number of eQTLs before filtering
 nrow(eqtl)
 
+# reomove gene ensembl versions from the ensembk id
+eqtl$Gene <- eqtl$Gene %>%
+  strsplit(split = "[.]") %>%
+  map(1) %>%
+  unlist()
+
 # make a genomic ranges list of significant eQTLs
 gr.eqtl <- eqtl %>%
   dplyr::select(Gene, SNP, SNPChr, SNPPos, MetaP) %>%
