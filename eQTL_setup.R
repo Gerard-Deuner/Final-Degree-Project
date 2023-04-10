@@ -154,12 +154,6 @@ nr_bf_filt
 # Number of enhancers in GRN after filtering:
 nr_aft_fil
 
-# Write file 
-
-########################
-# UNTIL HERE THE SETUP #
-########################
-
 # Validate enhancer-gene links based on the GRN
 # Keep distinct enhancer-gene links from the GRN and test how many of the GRN enhancer-gene links overlap with any eQTLs by annotating 
 #  each link as `TRUE` (if any eQTL SNP is located in the enhancer and its target gene matches) or `FALSE` 
