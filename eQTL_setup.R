@@ -8,18 +8,37 @@ library(Seurat)
 library(qs)
 library(GenomicRanges)
 library(tidyr)
+library(plyranges)
+library(data.table)
 
 # define dataset
 dataset <- "timecourse"
 
 # define correlation method
-corr.method <- "pearson"
+corr.method <- "sparman"
 
 # set eQTL data directory 
 data.dir <- "/g/scb/zaugg/deuner/valdata/eQTL/"
 
-# read GRN 
-grn <- qread("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes0.5_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
+# read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
+grn <- read_tsv("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes10_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz")
+
+# read genes and their positions from Ensembl:
+genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
+
+# read GRN object file to get genes that were used to create this GRN
+grn_genes <- qread("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes10_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
+
+## Filter GRN
+# Set an FDR threshold to include peak-gene links below a certain significance threshold.
+
+# Set threshold for significant GRN links
+GRN_FDR <- 0.05
+
+#Filter based on FDR and include only positive links
+grn <- grn %>%
+  filter(peak_gene.r > 0) %>%
+  filter(peak_gene.p_adj < GRN_FDR)
 
 
 # import Brain eQTL data
@@ -53,14 +72,16 @@ for (i in 1:25){
 }
 
 # columns whose names differ between tissues: 18, 19, 20
-for (df in eQTL.list){
-  df <- df %>%
-    select(c(-18, -19, -20))
+for (i in 1:length(eQTL.list)){
+  eQTL.list[[i]] <- eQTL.list[[i]] %>%
+    dplyr::select(c(-18, -19, -20))
 }
 
+# now all dfs have the same columns
 for (df in eQTL.list){
   print(ncol(df))
 }
+
 # merge all the eQTLs
 eqtl <- do.call("rbind", eQTL.list)
 
@@ -80,20 +101,28 @@ eqtl <- do.call("rbind", eQTL.list)
 # [25] "BetaAdjustedMetaP"                             "PvalueNominalThreshold"                       
 # [27] "qval" 
 
-# adapt column names to the names in Annique's script
+# column names equivalenced to Annique's names
+# molecular_trait_object_id = Gene
+# variant = SNP
+# chromosome = SNPChr
+# position = SNPPos
+# p_beta = MetaP
 
 # use as p value the beta p value (BetaAdjustedMetaP)
 # The permutations account for the number of variants tested per gene (~6000-10000 variants). FDR accounts for the number of genes tested (~13000 per dataset), so we calculate an FDR on the `p_beta` column and use that as a threshold to include eQTLs.
 # set threshold for significant eQTLs
 eQTL.FDR <- 0.3
 
+# number of eQTLs before filtering
+nrow(eqtl)
+
 # make a genomic ranges list of significant eQTLs
 gr.eqtl <- eqtl %>%
-  select(molecular_trait_object_id, variant, chromosome, position, p_beta) %>%
-  mutate(fdr = p.adjust(p_beta, method = "fdr")) %>%
-  filter(fdr < eQTL_FDR) %>%
-  dplyr::rename(eqtl.gene = molecular_trait_object_id) %>%
-  makeGRangesFromDataFrame(., keep.extra.columns=T, seqnames.field = 'chromosome', start.field = 'position', end.field = 'position')
+  dplyr::select(Gene, SNP, SNPChr, SNPPos, MetaP) %>%
+  mutate(fdr = p.adjust(MetaP, method = "fdr")) %>%
+  filter(fdr < eQTL.FDR) %>%
+  dplyr::rename(eqtl.gene = Gene) %>%
+  makeGRangesFromDataFrame(., keep.extra.columns=T, seqnames.field = 'SNPChr', start.field = 'SNPPos', end.field = 'SNPPos')
 
 # number of eQTLs after filtering
 length(gr.eqtl)
@@ -102,7 +131,7 @@ length(gr.eqtl)
 # Include the GRN enhancers that overlap with at least one significant eQTL SNP
 # keep distinct enhancers in this GRN (GRanges object)
 gr.grn_enhancers <- grn %>%
-  select(peak.ID) %>%
+  dplyr::select(peak.ID) %>%
   tidyr::separate(peak.ID, into = c("peak.chr", "peak.start", "peak.end"), remove = F) %>%
   mutate(peak.chr = str_replace_all(peak.chr, "chr", ""),
          peak.start.pos = peak.start) %>%
@@ -114,7 +143,7 @@ gr.filt_enhancers <- join_overlap_intersect(gr.eqtl, gr.grn_enhancers)
 
 # make into data frame
 filt_enhancers <- as.data.frame(gr.filt_enhancers) %>%
-  mutate(p_beta = as.character(p_beta),
+  mutate(p_beta = as.character(MetaP),
          fdr = as.numeric(fdr))
 
 nr_bf_filt <- length(unique(gr.grn_enhancers$peak.ID))
@@ -125,6 +154,11 @@ nr_bf_filt
 # Number of enhancers in GRN after filtering:
 nr_aft_fil
 
+# Write file 
+
+########################
+# UNTIL HERE THE SETUP #
+########################
 
 # Validate enhancer-gene links based on the GRN
 # Keep distinct enhancer-gene links from the GRN and test how many of the GRN enhancer-gene links overlap with any eQTLs by annotating 
@@ -151,23 +185,23 @@ nrow(grn)
 grn_links_validated <- grn %>%
   left_join(filt_enhancers, by = "peak.ID") %>%
   dplyr::rename(grn.gene = gene.ENSEMBL) %>%
-  select(peak.ID, grn.gene, eqtl.gene, variant, fdr) %>%
+  select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
   group_by(peak.ID, grn.gene) %>%
   mutate(link_validate = case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, 
                                    TRUE ~ FALSE))
 
 # show the GRN links that can be tested and whether they are validated or not
-datatable(grn_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
+data.table(grn_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
 
 # Validate enhancer-gene links based on the closest gene
 # As a background, produce enhancer-gene links for the same enhancers by selecting the closest gene to the peak location. 
 # Test how many of the GRN enhancer-gene links overlap with eQTLs by annotating each link as `TRUE` (if any eQTL SNP is located in 
 #  the enhancer and its target gene matches) or `FALSE` (eQTL SNP is located in the enhancer but none of its target genes overlaps with the GRN one). 
+
 # select only genes that were considered in making this GRN
-genes_in_grn <- grn_genes@data$RNA$counts_norm.l$`0` %>%
-  filter(isFiltered == F) %>%
-  select(ENSEMBL) %>%
-  inner_join(genes, by = c("ENSEMBL" = "ensembl_gene_id"))
+genes_in_grn <- grn_genes@connections$peak_genes$`0` %>%
+  dplyr::select(gene.ENSEMBL) %>%
+  inner_join(genes, by = c("gene.ENSEMBL" = "ensembl_gene_id"))
 
 # make ensembl genes into Genomic Ranges dataset
 gr.genes <- genes_in_grn %>% 
@@ -179,8 +213,8 @@ gr.genes <- genes_in_grn %>%
 # classify links as positive or negative
 nearest_links_validated <- join_nearest(gr.filt_enhancers, gr.genes) %>%
   as.data.frame() %>%
-  dplyr::rename(nearest.gene = ENSEMBL) %>%
-  select(peak.ID, nearest.gene, eqtl.gene, variant, fdr) %>%
+  dplyr::rename(nearest.gene = gene.ENSEMBL) %>%
+  select(peak.ID, nearest.gene, eqtl.gene, SNP, fdr) %>%
   group_by(peak.ID, nearest.gene) %>%
   mutate(link_validate = case_when(any(nearest.gene == eqtl.gene, na.rm = T) ~ TRUE,
                                    TRUE ~ FALSE))
@@ -188,13 +222,11 @@ nearest_links_validated <- join_nearest(gr.filt_enhancers, gr.genes) %>%
 # Number of enhancer-gene links to be tested
 nr_links <- nearest_links_validated %>% select(peak.ID, nearest.gene) %>% distinct() %>% nrow()
 
-
 # Number of enhancer-gene links based on nearest gene:
 nr_links
 
-
 # show the nearest gene links that can be tested and whether they are validated or not
-datatable(nearest_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
+data.table(nearest_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
 
 # Validate enhancer-gene links based on the randomly sampled distance-matched genes
 # As a background, produce enhancer-gene links for the same enhancers by selecting a gene with the same distance to the peak location.
@@ -233,8 +265,8 @@ random_links_validated_all <- lapply(1:20, function(rep) {
     sample_n(freq[1]) %>%
     ungroup() %>%
     inner_join(filt_enhancers, by = "peak.ID") %>%
-    dplyr::rename(random.gene = ENSEMBL) %>%
-    select(peak.ID, random.gene, eqtl.gene, variant, fdr) %>%
+    dplyr::rename(random.gene = gene.ENSEMBL) %>%
+    select(peak.ID, random.gene, eqtl.gene, SNP, fdr) %>%
     #  select(peak.ID, random.gene, eqtl.gene, variant, fdr, peak_gene.distance) %>%
     group_by(peak.ID, random.gene) %>%
     mutate(link_validate = case_when(any(random.gene == eqtl.gene, na.rm = T) ~ TRUE,
@@ -269,7 +301,7 @@ nr_links_rand
 # Sum up positive and negative links GRN:
 # function to make a table of the results
 make_table <- function(df){
-  colnames(df) <- c("peak.ID", "gene", "eqtl.gene", "variant", "fdr", "link_validate")
+  colnames(df) <- c("peak.ID", "gene", "eqtl.gene", "SNP", "fdr", "link_validate")
   table <- df %>%
     select(peak.ID, gene, link_validate) %>%
     distinct() %>%
@@ -309,7 +341,7 @@ mean_or <- mean(unlist(or))
 min_or <- min(unlist(or))
 max_or <- max(unlist(or))
 
-filename <- paste0("/g/scb/zaugg/claringb/eQTL_overlap_GRN/output/OR_", 
+filename <- paste0("g/scb/zaugg/deuner/valdata/eQTL", 
                    str_replace(eqtlfile, "\\..*", ""), "-FDR", eQTL_FDR, "_in_", 
                    str_replace(grndir, ".*/", ""), "-peak-gene-FDR", GRN_FDR,
                    ".txt")
