@@ -5,13 +5,7 @@
 # regress out mt.percent and ribo.perncent of SCT
 # choose between pearson or spearman correlation
 
-
-# algorithm: 1 = original Louvain algorithm
-# algorithm: 2 = Louvain algorithm with multilevel refinement
-# algorithm: 3 = SLM algorithm
-# algorithm: 4 = Leiden algorithm). Leiden requires the leidenalg python.
-# Algorithms discussed here: https://arxiv.org/pdf/1308.6604.pdf
-
+# prepapre the date (in normalisation step I regress out both mitochondrial and ribosomal genes)
 prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeuratObject = TRUE,
                                      file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
                                      assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
@@ -28,6 +22,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
   library(Seurat)
   library(checkmate)
   library(futile.logger)
+  library(Signac)
   
   checkmate::assertClass(seu.s, "Seurat")
   checkmate::assertSubset(c(assayName_RNA, assayName_ATAC), names(seu.s@assays))
@@ -84,7 +79,8 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     
     # Please note that this matrix is non-sparse, and can therefore take up a lot of memory if stored for all genes. 
     # To save memory, we store these values only for variable genes, by setting the return.only.var.genes = TRUE by default in the SCTransform() function call.
-    seu.s <- SCTransform(seu.s, verbose = FALSE, return.only.var.genes = returnOnlyVarGenes) %>% 
+    # MODIFICATION: I'VE REGRESSED THE MITOCHONDRIAL GENES AS THEIR EXPRESSION IS NON RANDMOLY DISTRIBUTED ACROSS THE TIMECOURSE
+    seu.s <- SCTransform(seu.s, verbose = FALSE, return.only.var.genes = returnOnlyVarGenes, vars.to.regress = c("percent.mt", "percent.ribo")) %>% 
       RunPCA() %>% 
       RunUMAP(dims = dimToUseRNA, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
     
@@ -118,7 +114,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     
     futile.logger::flog.info(paste0("Running clustering for the following resolutions: ", paste0(clusterResolutions, collapse = ", "), ". This may take a while."))
     
-    for (clusterResolution in unique(clusterResolutions)) {
+    for (clusterResolution in clusterResolutions) {
       
       file_in_rna  = paste0(outputDir, "/rna.pseudobulkFromClusters_res", clusterResolution, aggregationType, ".tsv.gz")
       file_in_atac = paste0(outputDir, "/atac.pseudobulkFromClusters_res", clusterResolution, aggregationType, ".tsv.gz")
@@ -131,11 +127,6 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       seu.s <- FindClusters(seu.s, graph.name = "wsnn", 
                             resolution = clusterResolution,
                             algorithm = clusteringAlgorithm, verbose = FALSE)
-      
-      clusterColName = paste0("wsnn_res.", clusterResolution)
-      Idents(seu.s) = clusterColName
-      seu.s@meta.data[[clusterColName]] = paste0("cluster", seu.s@meta.data[[clusterColName]])
-      seu.s@meta.data$seurat_clusters = paste0("cluster", seu.s@meta.data$seurat_clusters)
       
       if (doDimPlots) {
         pdfFile = paste0(outputDir, "/dimPlot_combined_clusterResolution", clusterResolution, ".pdf")
@@ -173,7 +164,8 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       
       futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
       atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = "ident", sumCounts, ID_column= "peakID")
-      
+      print(colnames(atac.pseudobulk.clean))
+      colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] = paste0(colnames(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)])
       
       # Replace the first hyphen with a colon
       atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
@@ -300,7 +292,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
   
   futile.logger::flog.info(paste0(" Cells per cluster: "), table(Idents(seu.s)), capture = TRUE)
   
-  metadata = tibble(sampleName = levels(seu.s), 
+  metadata = tibble(sampleName = paste0(levels(seu.s)), 
                     nCells = table(Idents(seu.s)) %>% as.vector())
   
   
@@ -467,7 +459,9 @@ runGRaNIE_batchMode <- function (datasetName,
                                  TF_peak.fdr.threshold = 0.2,
                                  peak_gene.fdr.threshold = 0.1,
                                  runNetworkAnalyses = FALSE, 
-                                 forceRerun = TRUE) {
+                                 forceRerun = TRUE,
+                                 correlation.method # pearson or spearman
+){
   
   
   library(tidyverse)
@@ -501,6 +495,9 @@ runGRaNIE_batchMode <- function (datasetName,
           file_in_rna  = paste0(inputDir, "/rna.pseudobulkFromClusters_res", clusterResolution, ".tsv.gz")
           file_in_atac = paste0(inputDir, "/atac.pseudobulkFromClusters_res", clusterResolution, ".tsv.gz")
           file_metadata = paste0(inputDir, "/metadata_res", clusterResolution, ".tsv.gz")
+          
+          print(colnames(file_in_rna))
+          print(colnames(file_in_atac))
           
           GRN = runGRaNIE(  dir_output, 
                             datasetName = paste0(datasetName, "_pseudobulk_res", clusterResolution),
@@ -592,6 +589,8 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       outputFolder = dir_output,
                       genomeAssembly = genomeAssembly)
   
+  # adapt names so they match!
+  colnames(countsATAC)[2:ncol(countsATAC)] <- colnames(countsRNA)[2:ncol(countsRNA)]
   
   GRN = addData(GRN,
                 counts_peaks = countsATAC, normalization_peaks = normalization_peaks, idColumn_peaks = idColumn_peaks,
@@ -649,7 +648,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                    minCV_peaks = minCV, minCV_genes = minCV, forceRerun = forceRerun)
   
   GRN = addConnections_TF_peak(GRN, connectionTypes = c("expression"), plotDiagnosticPlots = FALSE, plotDetails = FALSE, 
-                               corMethod = "pearson", maxFDRToStore = 0.3,
+                               corMethod = correlation.method, maxFDRToStore = 0.3,
                                useGCCorrection = useGCCorrection, percBackground_size = 75, percBackground_resample = TRUE,
                                forceRerun = forceRerun)
   
@@ -659,7 +658,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   
   GRN = addConnections_peak_gene(GRN,
                                  overlapTypeGene = overlapTypeGene,
-                                 corMethod = "pearson", shuffleRNACounts = TRUE,
+                                 corMethod = correlation.method, shuffleRNACounts = TRUE,
                                  promoterRange = promoterRange, TADs = NULL,
                                  nCores = nCores, plotDiagnosticPlots = TRUE,
                                  forceRerun = forceRerun)
