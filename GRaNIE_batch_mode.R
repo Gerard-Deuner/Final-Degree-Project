@@ -39,17 +39,21 @@ s.obj <- qread(paste0(path,"/tmp/", dataset, ".pp.seuratObject.qs"))
 # Path to the output directory
 seurat_outputFolder = paste0(path,"/outputdata/batch_mode/", dataset,"_batch_mode_", correlation.method)
 
-# Prepare data
-s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudobulk_source = "cluster", 
-                                      assayName_RNA = "RNA", assayName_ATAC= "ATAC",
-                                      file_RNA_features = file_RNA_features,
-                                      prepareData = TRUE,
-                                      saveSeuratObject = TRUE)
 
+# Prepare data
+s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudobulk_source = "cluster",
+                                 file_RNA_features = file_RNA_features,
+                                 prepareData = TRUE,
+                                 saveSeuratObject = TRUE)
+
+# create outputs directory
+dir.create(paste0(seurat_outputFolder, "/Batch_Mode_Outputs"))
+ 
 # runGRaNIE in batch mode
 runGRaNIE_batchMode(datasetName = paste(dataset, "Dataset", sep = "_"),
-                    inputDir = seurat_outputFolder, 
+                    inputDir = seurat_outputFolder,
                     outputDir = paste0(seurat_outputFolder, "/Batch_Mode_Outputs"),
+                    clusterResolutions = c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)),
                     genomeAssembly = genomeAssembly,
                     TFBS_folder = TFBS_folder,
                     nCores = 8,
@@ -57,4 +61,5 @@ runGRaNIE_batchMode(datasetName = paste(dataset, "Dataset", sep = "_"),
                     peak_gene.fdr.threshold = 0.1,
                     runNetworkAnalyses = FALSE,
                     forceRerun = TRUE,
-                    correlation.method = correlation.method) 
+                    correlation.method = correlation.method)
+
