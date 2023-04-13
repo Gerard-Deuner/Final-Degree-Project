@@ -43,7 +43,7 @@ for (file in file.names){
     dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names
   
   # rename column names (so they match with the global eQTL df's names)
-  names(data) <- c("molecular_trait_object_id", "variant", "chromosome", "position", "p_beta")
+  names(data) <- eqtl.names
   
   # concatenate the file with the rest of eQTL files
   eqtl <- rbind(eqtl, data)
