@@ -18,13 +18,16 @@ dataset <- "timecourse" # timecourse | combined
 corr.method <- "spearman" # pearson | spearman
 
 # define nature of the eQTL data 
-nature <- "metabrain" # metabrain | hipsci 
+nature <- "hipsci" # metabrain | hipsci 
 
-# set eQTL data directory
+# set eQTL data and output directory
 data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
+out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/output/")
 
 # list of files
-file.names <- list.files(data.dir)
+file.names <- list.files(data.dir) 
+# just take into account files containing the correct content
+file.names <- grep(".txt.gz", file.names, value = TRUE)
 
 # dataframe where all eQTLs are going to be stores
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
@@ -40,7 +43,7 @@ for (file in file.names){
   
   # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
   data <- data %>%
-    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names
+    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names, put an ifelse for both natures
   
   # rename column names (so they match with the global eQTL df's names)
   names(data) <- eqtl.names
@@ -79,11 +82,8 @@ print(paste("number of eQTLs before filtering", length(gr.eqtl)))
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
-# REMOVE LATER!
-res <- 10
-
 # iterate over GRNs
-#for (res in resolutions){
+for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
   grn <- read_tsv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
@@ -201,12 +201,12 @@ res <- 10
   data.table(nearest_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
   
   # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
-  dir.create(paste0(data.dir, "setup_outputs/", dataset, "_", corr.method))
-  write_tsv(nearest_links_validated, paste0(data.dir, "setup_outputs/", dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
+  dir.create(paste0(out.dir, dataset, "_", corr.method, "/"))
+  write_tsv(nearest_links_validated, paste0(out.dir, dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
   
-  ##############
-  # SETUP DONE #
-  ##############
+  #################################
+  # SETUP AND GRN VALIDATION DONE #
+  #################################
   
   # Validate enhancer-gene links based on the randomly sampled distance-matched genes
   # As a background, produce enhancer-gene links for the same enhancers by selecting a gene with the same distance to the peak location.
@@ -325,7 +325,7 @@ res <- 10
                      res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
   write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
 
-#}
+}
 
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 #round(mean_or, digits = 3) (range `r round(min_or, digits = 3)`-`r round(max_or, digits = 3)`)
