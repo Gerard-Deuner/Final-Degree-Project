@@ -1,1 +1,1 @@
-In this file I keep the SLURM scripts used to run heavy computationally files.  
+In this folder I keep the SLURM scripts used to run heavy computationally files.  
