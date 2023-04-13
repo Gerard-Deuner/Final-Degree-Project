@@ -13,10 +13,10 @@ library(Signac)
 args <- commandArgs(trailingOnly = TRUE)
 
 # choose dataset
-dataset <- args[1]
+dataset <- args[1] # timecourse | combined
 
 # choose correlation method
-correlation.method <- args[2]
+correlation.method <- args[2] # pearson | spearman
 
 # Set up source of helper functions 
 source("/g/scb/zaugg/deuner/GRaNIE/code/GRaNIE_helper_functions.R")
