@@ -12,88 +12,52 @@ library(plyranges)
 library(data.table)
 
 # define dataset
-dataset <- "timecourse"
+dataset <- "timecourse" # timecourse | combined
 
 # define correlation method
-corr.method <- "spearman"
+corr.method <- "spearman" # pearson | spearman
 
-# set eQTL data directory 
-data.dir <- "/g/scb/zaugg/deuner/valdata/eQTL/"
+# define nature of the eQTL data 
+nature <- "metabrain" # metabrain | hipsci 
 
-# import Brain eQTL data
-basalganglia.eQTL <- read.csv(paste0(data.dir, "2021-07-23-basalganglia-EUR-30PCs-TopEffects.txt.gz"), sep = "\t")
-cortex1.eQTL <- read.csv(paste0(data.dir, "2021-07-23-cortex-AFR-40PCs-TopEffects.txt.gz"), sep = "\t")
-cortex2.eQTL <- read.csv(paste0(data.dir, "2021-07-23-cortex-EUR-80PCs-TopEffects.txt.gz"), sep = "\t")
-cerebellum.eQTL <- read.csv(paste0(data.dir, "2021-07-23-cerebellum-EUR-60PCs-TopEffects.txt.gz"), sep = "\t")
-cortex3.eQTL <- read.csv(paste0(data.dir, "2021-07-23-cortex-EAS-30PCs-TopEffects.txt.gz"), sep = "\t")
-spinalcord.eQTL <- read.csv(paste0(data.dir, "2021-07-23-spinalcord-EUR-20PCs-TopEffects.txt.gz"), sep = "\t")
-hippocampus.eQTL <- read.csv(paste0(data.dir, "2021-07-23-hippocampus-EUR-30PCs-TopEffects.txt.gz"), sep = "\t")
+# set eQTL data directory
+data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
 
-# add sample column 
-basalganglia.eQTL$sample <- rep("basalganglia", nrow(basalganglia.eQTL))
-cortex1.eQTL$sample <- rep("cortex1", nrow(cortex1.eQTL))
-cortex2.eQTL$sample <- rep("cortex2", nrow(cortex2.eQTL))
-cerebellum.eQTL$sample <- rep("cerebellum", nrow(cerebellum.eQTL))
-cortex3.eQTL$sample <- rep("cortex3", nrow(cortex3.eQTL))
-spinalcord.eQTL$sample <- rep("spinalcord", nrow(spinalcord.eQTL))
-hippocampus.eQTL$sample <- rep("hippocampus", nrow(hippocampus.eQTL))
+# list of files
+file.names <- list.files(data.dir)
 
-# put all the dfs into a list
-eQTL.list <- list(basalganglia.eQTL, cortex1.eQTL, cortex2.eQTL, cerebellum.eQTL, cortex3.eQTL, spinalcord.eQTL, hippocampus.eQTL)
+# dataframe where all eQTLs are going to be stores
+eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
+eqtl.names <- c("molecular_trait_object_id", "variant", "chromosome", "position", "p_beta")
+colnames(eqtl) <- eqtl.names
 
-# check non-common columns and delete them in order to merge the dfs
-for (i in 1:25){
-  print(i)
-  for (df in eQTL.list){
-    print(colnames(df)[i])
-  }
-  print(" ")
+## store the eQTL data into a single dataframe
+# iterate over the eQTL files 
+for (file in file.names){
+  
+  # read files one by one
+  data <- read.csv(paste0(data.dir, file), sep = "\t")
+  
+  # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
+  data <- data %>%
+    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names
+  
+  # rename column names (so they match with the global eQTL df's names)
+  names(data) <- c("molecular_trait_object_id", "variant", "chromosome", "position", "p_beta")
+  
+  # concatenate the file with the rest of eQTL files
+  eqtl <- rbind(eqtl, data)
+  
+  # lastly, remove the file from memory and read the next one
+  rm(data)
+  
 }
 
-# columns whose names differ between tissues: 18, 19, 20
-for (i in 1:length(eQTL.list)){
-  eQTL.list[[i]] <- eQTL.list[[i]] %>%
-    dplyr::select(c(-18, -19, -20))
-}
-
-# now all dfs have the same columns
-for (df in eQTL.list){
-  print(ncol(df))
-}
-
-# merge all the eQTLs
-eqtl <- do.call("rbind", eQTL.list)
-
-# colnames
-# [1] "Gene"                                          "GeneChr"                                      
-# [3] "GenePos"                                       "GeneStrand"                                   
-# [5] "GeneSymbol"                                    "SNP"                                          
-# [7] "SNPChr"                                        "SNPPos"                                       
-# [9] "SNPAlleles"                                    "SNPEffectAllele"                              
-# [11] "SNPEffectAlleleFreq"                           "MetaP"                                        
-# [13] "MetaPN"                                        "MetaPZ"                                       
-# [15] "MetaBeta"                                      "MetaSE"                                       
-# [17] "NrDatasets"                                    "DatasetCorrelationCoefficients.Braineac.GTEx."
-# [19] "DatasetZScores.Braineac.GTEx."                 "DatasetSampleSizes.Braineac.GTEx."            
-# [21] "NrTestedSNPs"                                  "ProportionBetterPermPvals"                    
-# [23] "BetaDistAlpha"                                 "BetaDistBeta"                                 
-# [25] "BetaAdjustedMetaP"                             "PvalueNominalThreshold"                       
-# [27] "qval" 
-
-# column names equivalenced to Annique's names
-# molecular_trait_object_id = Gene
-# variant = SNP
-# chromosome = SNPChr
-# position = SNPPos
-# p_beta = MetaP
-
-# use as p value the beta p value (BetaAdjustedMetaP)
-# The permutations account for the number of variants tested per gene (~6000-10000 variants). FDR accounts for the number of genes tested (~13000 per dataset), so we calculate an FDR on the `p_beta` column and use that as a threshold to include eQTLs.
 # set threshold for significant eQTLs
 eQTL.FDR <- 0.3
 
 # number of eQTLs before filtering
-nrow(eqtl)
+print(paste("number of eQTLs before filtering", nrow(eqtl)))
 
 # reomove gene ensembl versions from the ensembl id
 eqtl$Gene <- eqtl$Gene %>%
@@ -110,16 +74,19 @@ gr.eqtl <- eqtl %>%
   makeGRangesFromDataFrame(., keep.extra.columns=T, seqnames.field = 'SNPChr', start.field = 'SNPPos', end.field = 'SNPPos')
 
 # number of eQTLs after filtering
-length(gr.eqtl)
+print(paste("number of eQTLs before filtering", length(gr.eqtl)))
 
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
+# REMOVE LATER!
+res <- 10
+
 # iterate over GRNs
-for (res in resolutions){
+#for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
-  grn <- read_tsv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes10_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak", res, "_peakGene0.1.tsv.gz"))
+  grn <- read_tsv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
   
   # read genes and their positions from Ensembl:
   genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
@@ -234,8 +201,8 @@ for (res in resolutions){
   data.table(nearest_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
   
   # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
-  dir.create(paste0(data.dir, dataset, "_", corr.method))
-  write.csv(paste0(data.dir, dataset, "_", corr.method, "_", res, "_eQTL_links"), nearest_links_validated)
+  dir.create(paste0(data.dir, "setup_outputs/", dataset, "_", corr.method))
+  write_tsv(nearest_links_validated, paste0(data.dir, "setup_outputs/", dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
   
   ##############
   # SETUP DONE #
@@ -354,11 +321,11 @@ for (res in resolutions){
   min_or <- min(unlist(or))
   max_or <- max(unlist(or))
   
-  filename <- paste0("g/scb/zaugg/deuner/valdata/eQTL/",  dataset, "_", corr.method, "/", "-FDR", eQTL_FDR, "_in_", 
+  filename <- paste0("g/scb/zaugg/deuner/valdata/eQTL/setup_outputs/or/",  dataset, "_", corr.method, "/", "-FDR", eQTL_FDR, "_in_", 
                      res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
   write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
 
-}
+#}
 
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 #round(mean_or, digits = 3) (range `r round(min_or, digits = 3)`-`r round(max_or, digits = 3)`)
