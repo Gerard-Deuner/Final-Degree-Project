@@ -1,6 +1,6 @@
-############################
-# TIMECOURSE PREPROCESSING #
-############################
+##############################
+# TIMECOURSE REPREPROCESSING #
+##############################
 
 # Load libraries
 library(GRaNIE)
@@ -613,13 +613,17 @@ markers7 %>%
   group_by(cluster) %>%
   slice_max(n = 1, order_by = avg_log2FC) -> top1_7
 top1_7
-DotPlot(timecourse.s2, features = top1_7$gene)
+DotPlot(timecourse.s2, features = top1_7$gene) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+DoHeatmap(timecourse.s2, features = unique(top1_7$gene))
 
 markers7 %>%
   group_by(cluster) %>%
   slice_max(n = 3, order_by = avg_log2FC) -> top3_7
 top3_7
-DotPlot(timecourse.s2, features = top3_7$gene)
+DotPlot(timecourse.s2, features = unique(top3_7$gene)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+DoHeatmap(timecourse.s2, features = unique(top3_7$gene))
 
 ## n = 14
 Idents(timecourse.s2) <- "pseudotime_clusters_n14"
@@ -629,9 +633,13 @@ markers14 %>%
   slice_max(n = 1, order_by = avg_log2FC) -> top1_14
 top1_14
 DotPlot(timecourse.s2, features = top1_14$gene)
+DoHeatmap(timecourse.s2, features = unique(top1_14$gene))
 
 # set Idents to celltype again
 Idents(timecourse.s2) <- "celltype_wnn"
 
 # Save seurat object
 qsave(timecourse.s2, paste0(work.dir, "tmp/timecourse.pp.nomicro.seuratObject.qs"))
+
+# Read the seurat
+timecourse.s2 <- qread(paste0(work.dir, "tmp/timecourse.pp.nomicro.seuratObject.qs"))
