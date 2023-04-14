@@ -1,6 +1,6 @@
-##########################################################
-# REDO PREPROCESSING / CELL TYPE ANNOTATION - CONFIRM IT #
-##########################################################
+############################
+# TIMECOURSE PREPROCESSING #
+############################
 
 # Load libraries
 library(GRaNIE)
@@ -575,6 +575,9 @@ p2
 # Add sampleID column 
 timecourse.s$sampleID <- timecourse.s$orig.ident
 
+# Set SCT to active assay
+DefaultAssay(timecourse.s) <- "SCT"
+
 # Save seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 
@@ -603,11 +606,29 @@ DimPlot(timecourse.s2, reduction = "umap", group.by = "pseudotime_clusters_n14",
   theme(plot.title = element_text(hjust = 0.5)) +  ggtitle("Pseudotime Clustering")
 
 # get markers for each pseudotime cluster
+## n = 7
+Idents(timecourse.s2) <- "pseudotime_clusters_n7"
+markers7 <- FindAllMarkers(timecourse.s2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+markers7 %>%
+  group_by(cluster) %>%
+  slice_max(n = 1, order_by = avg_log2FC) -> top1_7
+top1_7
+DotPlot(timecourse.s2, features = top1_7$gene)
+
+markers7 %>%
+  group_by(cluster) %>%
+  slice_max(n = 3, order_by = avg_log2FC) -> top3_7
+top3_7
+DotPlot(timecourse.s2, features = top3_7$gene)
+
+## n = 14
 Idents(timecourse.s2) <- "pseudotime_clusters_n14"
-markers <- FindAllMarkers(timecourse.s2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
-markers %>%
-  group_by(pseudotime_clusters_n14) %>%
-  slice_max(n = 2, order_by = avg_log2FC)
+markers14 <- FindAllMarkers(timecourse.s2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+markers14 %>%
+  group_by(cluster) %>%
+  slice_max(n = 1, order_by = avg_log2FC) -> top1_14
+top1_14
+DotPlot(timecourse.s2, features = top1_14$gene)
 
 # set Idents to celltype again
 Idents(timecourse.s2) <- "celltype_wnn"
