@@ -52,7 +52,7 @@ work.dir = "/g/scb/zaugg/deuner/GRaNIE/"
 
 # load "raw" seurat object
 timecourse.s <- qread(paste0(work.dir, "inputdata/timecourse.seuratObject.qs"))
-  
+
 # visualize the preprocessed data 
 # Visualize QC metrics as a violin plot
 Idents(timecourse.s) <- timecourse.s@meta.data$orig.ident
@@ -90,10 +90,10 @@ plot1 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1
 
 # Save seurat object 
-qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # Read seurat object
-timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # PCA
 DimPlot(timecourse.s, reduction = "pca")
@@ -131,15 +131,15 @@ timecourse.s <- RunUMAP(timecourse.s, umap.method = "umap-learn", dims = 1:15, m
 DimPlot(timecourse.s, reduction = "umap", label = TRUE)
 
 # Save seurat object
-qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # Read seurat object
-timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # Visualize if data clusters by some technical variable
 FeaturePlot(timecourse.s, reduction = "umap", features = c("nCount_RNA", "nFeature_RNA", "percent.mt", "percent.ribo"))
 
-# Cell Type annotation
+## Cell Type annotation
 
 ##################################################
 # from cluster markers to to celltype annotation #
@@ -248,9 +248,9 @@ FeaturePlot(timecourse.s, reduction = "umap", features = c("AADC", "DAT", "LMX1B
 
 # hiPSC markers
 hiPSC.markers <- unique(c("5T4", "ABCG2", "B18R", "CBX2", "CD9", "CD30", "TNFRSF8", "CD117", "CDX2", 
-                   "CHD1", "DNMT3B", "DPPA2", "DPPA4", "DPPA5", "ESG1", "EPCAM", "TROP1", "NR3B2",
-                   "ERVMER34", "ESGP", "FBXO15", "FGF4", "FGF5", "FOXD3", "GCNF", "NR6A1", "GDF3",
-                   "POU5F1", "OCT4", "409B2", "B7", "HOIK1", "KUCG2", "WIBJ2", "WTC", "KLF4, NANOG"))
+                          "CHD1", "DNMT3B", "DPPA2", "DPPA4", "DPPA5", "ESG1", "EPCAM", "TROP1", "NR3B2",
+                          "ERVMER34", "ESGP", "FBXO15", "FGF4", "FGF5", "FOXD3", "GCNF", "NR6A1", "GDF3",
+                          "POU5F1", "OCT4", "409B2", "B7", "HOIK1", "KUCG2", "WIBJ2", "WTC", "KLF4, NANOG"))
 FeaturePlot(timecourse.s, reduction = "umap", features = hiPSC.markers) + labs(caption = "hiPSC markers")
 
 # NPC markers
@@ -263,23 +263,23 @@ FeaturePlot(timecourse.s, reduction = "umap", features = mat.neuron.markers) + l
 
 # immature neurons markers
 immat.neuron.markers <- unique(c("DCX", "TBR1", "PSANCAM", "Ascl1", "ASCL1", "DCX", "TUBB3", "NeuroD1", "NEUROD1",
-                          "TBR1", "STMN1","NGN2"))
+                                 "TBR1", "STMN1","NGN2"))
 FeaturePlot(timecourse.s, reduction = "umap", features = immat.neuron.markers) + labs(caption = "immature neurons markers")
 
 # general neuronal markers
 neuron.markers <- unique(c("NEUN", "MAP2", "PSD95", "vGLUT2", "NMDAR2B", "GAP43", "GAT1", "GAD65", "GAD67", "GIRK2", 
-                    "NURR1", "LMX1B", "FOXA2")) 
+                           "NURR1", "LMX1B", "FOXA2")) 
 FeaturePlot(timecourse.s, reduction = "umap", features = neuron.markers) + labs(caption = "neuronal markers")
 
 # microglia markers
 microglia.markers <- unique(c("TMEM119", "CD11B", "CD45", "IBA1", "F80", "CD68", "CD40",  "CD11B", "P2RY12", "CD14", "CD80", 
-                       "CD115", "CX3CR1", "F4", "F40", "FCER1G", "TMEM119", "CD11b", "CD45", "Iba1", "CX3CR1", "F4", 
-                       "F80", "CD68", "CD40"))
+                              "CD115", "CX3CR1", "F4", "F40", "FCER1G", "TMEM119", "CD11b", "CD45", "Iba1", "CX3CR1", "F4", 
+                              "F80", "CD68", "CD40"))
 FeaturePlot(timecourse.s, reduction = "umap", features = microglia.markers) + labs(caption = "microglia markers")
 
 # differentiating cells markers
 diff.markers <- unique(c("AADC", "DAT", "LMX1B", "MAP2", "SOX2", "SOX1", "MAP2A", "MAP2B", "TUJ1", "GFAP", "GABA", "GAD65", 
-                  "TH", "CHAT"))
+                         "TH", "CHAT"))
 FeaturePlot(timecourse.s, reduction = "umap", features = diff.markers) + labs(caption = "differentiating cells markers")
 
 # cells treated with BDNF
@@ -293,35 +293,35 @@ FeaturePlot(timecourse.s, reduction = "umap", features = "POU4F1") + labs(captio
 DimPlot(timecourse.s, reduction = "umap", label = TRUE)
 
 new.cluster.ids <- c("diff - NPC-like", #0
-                    "hiPSC", #1
-                    "diff", #2
-                    "diff - immature.neuron", #3
-                    "neuron - mature.neuron", #4 #Gap43
-                    "microglia", #5
-                    "diff - hiPSC-like", #6
-                    "hiPSC - start.diff", #7
-                    "neuron - development", #8
-                    "neuron - excitatory", #9
-                    "mature.neuron - adhesion", #10 #Map2
-                    "neuron - mature.neuron", #11
-                    "diff - RUNX1", #12
-                    "diff - tiny" #13
+                     "hiPSC", #1
+                     "diff", #2
+                     "diff - immature.neuron", #3
+                     "neuron - mature.neuron", #4 #Gap43
+                     "microglia", #5
+                     "diff - hiPSC-like", #6
+                     "hiPSC - start.diff", #7
+                     "neuron - development", #8
+                     "neuron - excitatory", #9
+                     "mature.neuron - adhesion", #10 #Map2
+                     "neuron - mature.neuron", #11
+                     "diff - RUNX1", #12
+                     "diff - tiny" #13
 )
 
 basic.cluster.ids <- c("diff", #0
-                     "hiPSC", #1
-                     "diff", #2
-                     "diff", #3
-                     "neuron", #4 #Gap43
-                     "microglia", #5
-                     "diff", #6
-                     "hiPSC", #7
-                     "neuron", #8
-                     "neuron", #9
-                     "neuron", #10 #Map2
-                     "neuron", #11
-                     "diff", #12
-                     "diff" #13
+                       "hiPSC", #1
+                       "diff", #2
+                       "diff", #3
+                       "neuron", #4 #Gap43
+                       "microglia", #5
+                       "diff", #6
+                       "hiPSC", #7
+                       "neuron", #8
+                       "neuron", #9
+                       "neuron", #10 #Map2
+                       "neuron", #11
+                       "diff", #12
+                       "diff" #13
 )
 
 # Add new cell annotation to the Seurat Object
@@ -341,6 +341,12 @@ p1 <- DimPlot(timecourse.s, reduction = "umap", group.by = "basic_celltype", lab
 p2 <- DimPlot(timecourse.s, reduction = "umap", group.by = "celltype", label = TRUE, label.size = 2.5, repel = TRUE) + ggtitle("Accurate Cell Type Annotation") +
   theme(plot.title = element_text(hjust = 0.5))
 p1 | p2
+
+# Save seurat object
+qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
+
+# Read seurat object
+timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 ####################################
 # TRAJECTORY - PSEUDOTIME ANALYSIS #
@@ -426,8 +432,8 @@ cds_from_seurat$seurat_clusters <- timecourse.s@meta.data$seurat_clusters
 data.pseudo <-as.data.frame(colData(cds_from_seurat))
 
 ggplot(data.pseudo, aes(monocle3_pseudotime, reorder(seurat_clusters, monocle3_pseudotime, median), fill = seurat_clusters)) + 
-         geom_boxplot() + 
-         ylab("ordered clusters by pseudotime")
+  geom_boxplot() + 
+  ylab("ordered clusters by pseudotime")
 
 # find genes that change as function of pseudotime
 genes <- graph_test(cds_from_seurat, neighbor_graph = "principal_graph", cores = 4)
@@ -454,6 +460,16 @@ Idents(timecourse.s) <- timecourse.s$basic_celltype
 FeaturePlot(timecourse.s, features = "pseudotime", label = TRUE)
 
 Idents(timecourse.s) <- timecourse.s$celltype
+
+# cluster cells according to pseudotime
+timecourse.s$pseudotime_clusters_n7 <- cut(timecourse.s$pseudotime, c(0, 10, 20, 30, 40, 50, 60, Inf), c(1:7), include.lowest = TRUE)
+timecourse.s$pseudotime_clusters_n14 <- cut(timecourse.s$pseudotime, seq(0, 70, by = 5), c(1:14), include.lowest = TRUE)
+
+# visualize them
+DimPlot(timecourse.s, reduction = "umap", group.by = "pseudotime_clusters_n7", label = TRUE, label.size = 2.5, repel = TRUE) +
+  theme(plot.title = element_text(hjust = 0.5)) +  ggtitle("Pseudotime Clustering")
+DimPlot(timecourse.s, reduction = "umap", group.by = "pseudotime_clusters_n14", label = TRUE, label.size = 2.5, repel = TRUE) +
+  theme(plot.title = element_text(hjust = 0.5)) +  ggtitle("Pseudotime Clustering")
 
 # Save the seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
@@ -544,7 +560,7 @@ ann.equival <- c("hiPSC", #0
                  "mature.neuron - small-1", #13
                  "mature.neuron - small-2", #14
                  "diff - tiny"  #15
-                 )
+)
 
 names(ann.equival) <- levels(timecourse.s)
 timecourse.s <- RenameIdents(timecourse.s, ann.equival)
@@ -556,8 +572,45 @@ p2 <- DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "celltype_wnn", l
 p1 | p2
 p2
 
+# Add sampleID column 
+timecourse.s$sampleID <- timecourse.s$orig.ident
+
 # Save seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 
 # Read the seurat
 timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+
+###########################
+# REMOVE MICROGLIAL CELLS #
+###########################
+
+# Read the seurat
+timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
+
+# remove microglia and diff-tiny clusters 
+timecourse.s2 <- timecourse.s %>%
+  subset(subset = celltype_wnn != "microglia-1") %>%
+  subset(subset = celltype_wnn != "microglia-2") %>%
+  subset(subset = celltype_wnn != "diff - tiny") 
+
+table(timecourse.s2$celltype_wnn)
+
+# visualize pseudotime clustering
+DimPlot(timecourse.s2, reduction = "umap", group.by = "pseudotime_clusters_n7", label = TRUE, label.size = 2.5, repel = TRUE) +
+  theme(plot.title = element_text(hjust = 0.5)) +  ggtitle("Pseudotime Clustering")
+DimPlot(timecourse.s2, reduction = "umap", group.by = "pseudotime_clusters_n14", label = TRUE, label.size = 2.5, repel = TRUE) +
+  theme(plot.title = element_text(hjust = 0.5)) +  ggtitle("Pseudotime Clustering")
+
+# get markers for each pseudotime cluster
+Idents(timecourse.s2) <- "pseudotime_clusters_n14"
+markers <- FindAllMarkers(timecourse.s2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+markers %>%
+  group_by(pseudotime_clusters_n14) %>%
+  slice_max(n = 2, order_by = avg_log2FC)
+
+# set Idents to celltype again
+Idents(timecourse.s2) <- "celltype_wnn"
+
+# Save seurat object
+qsave(timecourse.s2, paste0(work.dir, "tmp/timecourse.pp.nomicro.seuratObject.qs"))
