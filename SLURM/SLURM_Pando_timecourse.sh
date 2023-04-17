@@ -16,7 +16,8 @@ echo "STARTING JOB"
  
 # Load R module
 module load R
-module load R-bundle-Bioconductor 
+module load R-bundle-Bioconductor/3.15-foss-2021b-R-4.2.0
+ 
  
 # Executing an R script
 Rscript --vanilla /g/scb/zaugg/deuner/Pando/code/Pando.R
