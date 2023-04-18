@@ -18,16 +18,27 @@ dataset <- "timecourse" # timecourse | combined
 corr.method <- "spearman" # pearson | spearman
 
 # define nature of the eQTL data 
-nature <- "hipsci" # metabrain | hipsci 
+nature <- "metabrain" # metabrain | hipsci | all
 
-# set eQTL data and output directory
-data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/output/")
+# get list of eqtl files
+if (nature == "all"){
+  file.names.brain <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/")
+  file.names.brain <- grep(".txt.gz", file.names.brain, value = TRUE)
+  file.names.hipsci <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/")
+  file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
+  file.names <- c(file.names.metabrain, file.names.hipsci)
+} else {
+  # set eQTL data and output directory
+  data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
+  out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/output/")
+  
+  # list of files
+  file.names <- list.files(data.dir) 
+  # just take into account files containing the correct content
+  file.names <- grep(".txt.gz", file.names, value = TRUE)
+}
 
-# list of files
-file.names <- list.files(data.dir) 
-# just take into account files containing the correct content
-file.names <- grep(".txt.gz", file.names, value = TRUE)
+
 
 # dataframe where all eQTLs are going to be stores
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
@@ -82,8 +93,11 @@ print(paste("number of eQTLs before filtering", length(gr.eqtl)))
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
+# ELIMINATE LATER!
+res <- 10
+
 # iterate over GRNs
-for (res in resolutions){
+# for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
   grn <- read_tsv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
@@ -325,7 +339,7 @@ for (res in resolutions){
                      res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
   write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
 
-}
+#}
 
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 #round(mean_or, digits = 3) (range `r round(min_or, digits = 3)`-`r round(max_or, digits = 3)`)
