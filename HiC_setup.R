@@ -100,14 +100,17 @@ write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/",
 celltype <- "NPC"
 
 # load links files
-pp.links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.pp.all.txt.bz2", sep= "\t")
-po.links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.po.all.txt.bz2", sep = "\t")
+# pp.links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.pp.all.txt.bz2", sep= "\t") # promoter | promoter links
+links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.po.all.txt.bz2", sep = "\t") # promoter | other links -> interested in this ones as other may represent enhancers
+head(links)
 
 # merge them 
-links <- rbind(pp.links, po.links)
+# links <- rbind(pp.links, po.links)
 
-# create individual columns for chr, start, end
-links[c("chr.1", "start.1", "end.1")] <- str_split_fixed(links$frag1, "[.]", 3)
+# create individual columns for chr, start, end respectively 
+# 1. promoter
+# 2. "enhancer"
+links[c("chr.1", "start.1", "end.1")] <- str_split_fixed(links$frag1, "[.]", 3) 
 links[c("chr.2", "start.2", "end.2")] <- str_split_fixed(links$frag2, "[.]", 3)
 head(links)
 
@@ -119,8 +122,8 @@ links$frag2 <- sub("[.]", "-", links$frag2)
 head(links)
 
 # pcHiC read data was mapped to human genome hg19 so we need to adapt the hg19 annotations to hg38 reference genome
-library(rtracklayer)
-chain <- import.chain("/g/scb/zaugg/deuner/valdata/hg19ToHg38.over.chain")
+#library(rtracklayer)
+#chain <- import.chain("/g/scb/zaugg/deuner/valdata/hg19ToHg38.over.chain")
 
 # create ranges column 
 links$ranges1 <- strsplit(links$frag1, ":", 2) %>% map(2)
@@ -128,30 +131,40 @@ links$ranges2 <- strsplit(links$frag2, ":", 2) %>% map(2)
 head(links)
 
 # save coordinates in separated files to convert them using liftOver webpage
-write.csv(links$frag1, "/g/scb/zaugg/deuner/valdata/prom_cords.csv", row.names=FALSE)
-write.csv(links$frag2, "/g/scb/zaugg/deuner/valdata/link_cords.csv", row.names=FALSE)
+write.table(links$frag1, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/prom_cords.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
+write.table(links$frag2, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
+
+# adapt coordinates from hg19 to hg38
+# using UCSC liftover: https://genome.ucsc.edu/cgi-bin/hgLiftOver
+# Load converted regions as well as non intersected regions to eliminate them
+proms.hg38 <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/prom_cords_hg38.bed"), character(), quote = "\t")
+proms.hg38.err <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/prom_cords_hg38_error.txt"), character(), quote = "")
+links.hg38 <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords_hg38.bed"), character(), quote = "")
+links.hg38.err <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords_hg38_error.txt"), character(), quote = "")
+
+# filter out links containing an unmatched region and replace old regions
+links1 <- links %>%
+  filter(!frag1 %in% proms.hg38.err)
+
+# check if unamatched regions have been removed effectively
+nrow(links1) == length(proms.hg38)
+
+# filter out links containing an unmatched region and replace old regions
+links2 <- links %>%
+  filter(!frag2 %in% links.hg38.err)
+
+# check if unamatched regions have been removed effectively
+nrow(links2) == length(links.hg38)
+
+# PERQUÈ ELS LINKS CONVERTITS TENEN MËS ROWS SI AL UCSC DIU K TENEN LES MATEIXES QUE LINKS1 I 2 !?!?!?!?!!?
 
 # create GRanges objects, 
 links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE)   
 links2 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.2", start.field = "start.2", end.field = "end.2", keep.extra.columns = TRUE)
 
-# adapt coordinates
-l1 <- liftOver(links1, chain) #11016843
-
-l1 <- unlist(l1) # 12563604
-ll1 <- data.frame(l1) #12563604
-nrow(ll1 %>% distinct())
-
-# HI HA DUPLICATES EN LES COLUMNES FRAG1 I FRAG2, MIRAR ELS DUPLICATES I AGAFAR EL MIN DELS STARTS I EL MAX DELS ENDS!!!
-
-class(links1[1][1,ranges()])
-ranges(links1)[[1]][1]
-liftover()  
-
-
-  rename(seqnames = "chr.1", start = "start.1", end = "end.1") %>%
+rename(seqnames = "chr.1", start = "start.1", end = "end.1") %>%
   dplyr::select(c("chr.1", "start.1", "end.1", "frag1", "frag2"))
-links2 <- makeGRangesFromDataFrame(links2, keep.extra.columns = TRUE) %>%
+links2 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.2", start.field = "start.2", end.field = "end.2", keep.extra.columns = TRUE) %>%
   liftOver(chain) %>%
   as.data.frame() %>% 
   rename(seqnames = "chr.2", start = "start.2", end = "end.2") %>%
@@ -240,6 +253,8 @@ View(ds.baits_ds.ehcs)
 # IMPORTANT: 2 mandatory columns: peak and gene
 write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/", dataset, "_", celltype, "_pchic_links.csv"))
 
-#%%%%%#
-# PSC # 
-#%%%%%#
+#%%%%%%#
+# iPSC # 
+#%%%%%%#
+
+celltype <- "iPSC"
