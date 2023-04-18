@@ -19,7 +19,7 @@ dataset <- args[1] # timecourse | combined
 correlation.method <- args[2] # pearson | spearman
 
 # choose cluster resolution 
-res <- args[3]
+res <- args[3] # [0.1, 20]
 
 # Set up source of helper functions 
 source("/g/scb/zaugg/deuner/GRaNIE/code/GRaNIE_helper_functions.R")
@@ -62,5 +62,3 @@ GRN = runGRaNIE(
   genomeAssembly = "hg38", 
   nCores = 8, 
   runNetworkAnalyses = FALSE) 
-
-
