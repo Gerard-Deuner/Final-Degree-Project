@@ -56,9 +56,9 @@ dir.create(paste0(seurat_outputFolder, "/Batch_Mode_Outputs"))
 GRN = runGRaNIE(
   datasetName = "Timecourse_Dataset",
   dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_celltype_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"), 
-  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_celltype.tsv.gz"), 
-  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_celltype.tsv.gz"), 
-  file_metadata = paste0(seurat_outputFolder,"/metadata_celltype.tsv.gz"),
+  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_wsnn_res.", res, ".tsv.gz"), 
+  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_wsnn_res.", res, ".tsv.gz"), 
+  file_metadata = paste0(seurat_outputFolder,"/metadata_wsnn_res.", res, ".tsv.gz"),
   genomeAssembly = "hg38", 
   nCores = 8, 
   runNetworkAnalyses = FALSE) 
