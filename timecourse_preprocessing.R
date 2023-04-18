@@ -591,13 +591,30 @@ timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 # Read the seurat
 timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 
-# remove microglia and diff-tiny clusters 
-timecourse.s2 <- timecourse.s %>%
-  subset(subset = celltype_wnn != "microglia-1") %>%
-  subset(subset = celltype_wnn != "microglia-2") %>%
-  subset(subset = celltype_wnn != "diff - tiny") 
+DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "wsnn_res.5", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
 
+# remove microglia and very small clusters
+timecourse.s2 <- timecourse.s %>%
+  subset(subset = wsnn_res.5 != 12) %>%
+  subset(subset = wsnn_res.5 != 22) %>%
+  subset(subset = wsnn_res.5 != 29) %>%
+  subset(subset = wsnn_res.5 != 37) %>%
+  subset(subset = wsnn_res.5 != 35) %>%
+  subset(subset = wsnn_res.5 != 40)
+
+# check if I removed the cells correctly
 table(timecourse.s2$celltype_wnn)
+
+# remove robust remaining cells
+timecourse.s2 <- timecourse.s2 %>%
+  subset(subset = celltype_wnn != "mature.neuron - small-1") %>%
+  subset(subset = celltype_wnn != "diff - tiny")
+
+# check again if I removed the cells correctly
+table(timecourse.s2$celltype_wnn)
+
+# take a look at the UMAP without those cell types
+DimPlot(timecourse.s2, reduction = "wnn.umap", group.by = "celltype_wnn", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
 
 # visualize pseudotime clustering
 DimPlot(timecourse.s2, reduction = "umap", group.by = "pseudotime_clusters_n7", label = TRUE, label.size = 2.5, repel = TRUE) +
