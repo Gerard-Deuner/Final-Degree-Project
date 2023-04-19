@@ -11,8 +11,11 @@ library(tidyr)
 library(stringr)
 library(purrr)
 
+# read dataset from command line
+args <- commandArgs(trailingOnly = TRUE)
+
 # define dataset
-dataset <- "timecourse"
+dataset <- args[1]
 
 #%%%%%%%%#
 # NEURON # 
