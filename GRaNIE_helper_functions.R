@@ -559,7 +559,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       runNetworkAnalyses = FALSE, 
                       nCores = 8,
                       forceRerun = TRUE,
-                      correlation.method = correlation.method,
+                      correlation.method = correlation.method
 ) {
   
   library(tidyverse)
