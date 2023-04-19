@@ -50,7 +50,7 @@ seurat_object <- find_motifs(
 
 # Code that fixes an error ecountered in infer_grn(). It inseured a one-to-one mapping between cand_regions and peak_ranges.
 regions <- NetworkRegions(seurat_object)
-cand_ranges <- peakRanges@ranges
+cand_ranges <- peakRanges@ranges %>% as.data.frame() %>% dplyr::rename("seqnames" = "names") %>% makeGRangesFromDataFrame()
 peak_ranges <- StringToGRanges(rownames(GetAssay(seurat_object, assay='ATAC')))
 peak_overlaps <- findOverlaps(cand_ranges, peak_ranges)
 
