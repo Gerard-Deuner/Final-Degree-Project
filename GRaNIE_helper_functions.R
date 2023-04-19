@@ -558,7 +558,8 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       peak_gene.fdr.threshold = 0.1,
                       runNetworkAnalyses = FALSE, 
                       nCores = 8,
-                      forceRerun = TRUE
+                      forceRerun = TRUE,
+                      correlation.method = correlation.method,
 ) {
   
   library(tidyverse)
@@ -576,6 +577,8 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   countsRNA    = read_tsv(file_rna)
   metadata.all = read_tsv(file_metadata) 
   
+  # added by me so rna and atac sample names match 
+  names(countsATAC)[2:ncol(countsATAC)] <- names(countsRNA)[2:ncol(countsRNA)]
   
   # Arbitrary list with information and metadata that is stored within the GRN object
   metadata.l = list(name = datasetName,
