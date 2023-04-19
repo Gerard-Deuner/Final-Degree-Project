@@ -10,8 +10,11 @@ library(qs)
 library(GenomicRanges)
 library(stringr)
 
+# read dataset from command line
+args <- commandArgs(trailingOnly = TRUE)
+
 # define dataset
-dataset <- "combined"
+dataset <- args[1] # timecourse | combined
 
 # set path to ChiP-seq data
 path <- "/g/scb2/zaugg/deuner/ChipSeqData/"
@@ -42,26 +45,30 @@ chip <- chip %>% separate(V1, c("chr", "chromStart", "chromEnd", "exp"), "\t")
 colnames(chip)[5:6] <- c("TF", "celltype")
 head(chip)
 
-# save file
-write.csv(chip, file = gzfile(paste0("/g/scb2/zaugg/deuner/ChipSeqData/filtered_TFs_chipseq_", dataset, ".csv.gz")))
-
-
 # filter for peaks found in the dataset
 DefaultAssay(s.obj) <- "ATAC"
-tc.peaks <- rownames(s.obj)
-tc.peaks <- as.data.frame(str_split_fixed(tc.peaks, "-", 3))
-colnames(tc.peaks) <- c("chr", "chromStart", "chromEnd")
+tc.peaks <- rownames(s.obj) %>% as.data.frame()
+names(tc.peaks) <- "peak"
+tc.peaks[c("chr", "chromStart", "chromEnd")] <- str_split_fixed(tc.peaks$peak, "-", 3)
+
 # use findOverlaps method from GenomicRanges
 ref <-  makeGRangesFromDataFrame(tc.peaks, keep.extra.columns = TRUE) 
 qry <-  makeGRangesFromDataFrame(chip)
 ovlp <- findOverlaps(qry, ref) # returns indexes of intersecting regions
 head(ovlp)
-ovlp.indx <- unique(ovlp@to)
+ovlp.indx <- ovlp@to
+
 # subset baits overlapping dataset gene promoters
 chip <-  chip[ovlp.indx,]
-chip <- chip[,2:ncol(chip)]
+
+# add peak column
+chip$peak <- tc.peaks[ovlp@from, "peak"]
 head(chip)
 
+# important columns: TF and peak. Keep also celltype column
+chip <- chip %>%
+  select(TF, peak, celltype)
+
 # save file
-write.csv(chip, file = gzfile(paste0("/g/scb2/zaugg/deuner/ChipSeqData/filtered_chipseq_", dataset, ".csv.gz")))
+write.csv(chip, file = gzfile(paste0("/g/scb/zaugg/deuner/valdata/ChiP-seq/filtered_chipseq_", dataset, ".tsv.gz")))
 
