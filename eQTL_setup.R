@@ -10,6 +10,7 @@ library(GenomicRanges)
 library(tidyr)
 library(plyranges)
 library(data.table)
+library(purrr)
 
 # define dataset
 dataset <- "timecourse" # timecourse | combined
@@ -38,8 +39,6 @@ if (nature == "all"){
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 }
 
-
-
 # dataframe where all eQTLs are going to be stores
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
 eqtl.names <- c("molecular_trait_object_id", "variant", "chromosome", "position", "p_beta")
@@ -47,7 +46,7 @@ colnames(eqtl) <- eqtl.names
 
 ## store the eQTL data into a single dataframe
 # iterate over the eQTL files 
-for (file in file.names){
+for (file in file.names[1]){
   
   # read files one by one
   data <- read.csv(paste0(data.dir, file), sep = "\t")
@@ -57,7 +56,7 @@ for (file in file.names){
     dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names, put an ifelse for both natures
   
   # rename column names (so they match with the global eQTL df's names)
-  names(data) <- eqtl.names
+  #names(data) <- eqtl.names
   
   # concatenate the file with the rest of eQTL files
   eqtl <- rbind(eqtl, data)
@@ -66,7 +65,7 @@ for (file in file.names){
   rm(data)
   
 }
-
+head(eqtl)
 # set threshold for significant eQTLs
 eQTL.FDR <- 0.3
 
@@ -74,8 +73,7 @@ eQTL.FDR <- 0.3
 print(paste("number of eQTLs before filtering", nrow(eqtl)))
 
 # reomove gene ensembl versions from the ensembl id
-eqtl$Gene <- eqtl$Gene %>%
-  strsplit(split = "[.]") %>%
+eqtl$Gene <- strsplit(eqtl$Gene, "[.]") %>%
   map(1) %>%
   unlist()
 
