@@ -84,6 +84,3 @@ modules <- NetworkModules(test_srt)
 
 # Save Network output
 write.csv(modules@meta, paste0("/g/scb/zaugg/deuner/Pando/outputdata/", dataset, ".GRN.tsv"))
-
-overlaps <- findOverlaps(seurat_object@assays$ATAC@ranges, seurat_object@assays$ATAC@ranges)
-all(data.frame(overlaps)[['queryHits']] == data.frame(overlaps)[['subjectHits']])
