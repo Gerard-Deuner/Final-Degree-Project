@@ -46,7 +46,7 @@ colnames(eqtl) <- eqtl.names
 
 ## store the eQTL data into a single dataframe
 # iterate over the eQTL files 
-for (file in file.names[1]){
+for (file in file.names){
   
   # read files one by one
   data <- read.csv(paste0(data.dir, file), sep = "\t")
