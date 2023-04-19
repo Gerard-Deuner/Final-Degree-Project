@@ -158,8 +158,20 @@ links2 <- links %>%
 # check if unamatched regions have been removed effectively
 nrow(links2) == length(links.hg38)
 
-# replace old cords (hg19) with new cords (hg38) 
+# keep regions involving coords well matched 
+links3 <- inner_join(links1, links2, by = c("frag1", "frag2"))
+# inner_join(links1 %>% dplyr::select(frag1, new1), by = "frag1") %>%
+# inner_join(links2 %>% dplyr::select(frag2, new2), by = "frag2") 
 
+# check if there is a decrease of links
+nrow(links)
+nrow(links3)
+
+# replace old cords (hg19) with new cords (hg38) 
+links$frag1 <- links$new1
+links$frag2 <- links$new2
+
+links <- links %>% select(-c("new1", "new2"))
 
 # create GRanges objects, 
 links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE)   
