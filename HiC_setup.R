@@ -87,7 +87,7 @@ ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>% cbind(peak = peak.names)
 View(ds.baits_ds.ehcs)
 
 # save links into a csv file 
-write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/", dataset, "_", celltype, "_pchic_links.csv"))
+write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/valdata/links/", dataset, "_", celltype, "_pchic_links.csv"))
 
 
 #%%%%%#
@@ -102,6 +102,13 @@ celltype <- "NPC"
 # load links files
 # pp.links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.pp.all.txt.bz2", sep= "\t") # promoter | promoter links
 links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.po.all.txt.bz2", sep = "\t") # promoter | other links -> interested in this ones as other may represent enhancers
+head(links)
+
+# change format of frag1 and frag2 columns to chr:start-end
+links$frag1 <- sub("[.]", ":", links$frag1) # replaces the first match
+links$frag1 <- sub("[.]", "-", links$frag1)
+links$frag2 <- sub("[.]", ":", links$frag2) # replaces the first match
+links$frag2 <- sub("[.]", "-", links$frag2)
 head(links)
 
 # pcHiC read data was mapped to human genome hg19 so we need to adapt the hg19 annotations to hg38 reference genome
@@ -122,7 +129,7 @@ links1 <- links %>%
   filter(!frag1 %in% proms.hg38.err) %>%
   mutate(new1 = proms.hg38)
 
-# check if unamatched regions have been removed effectively
+# check if unmatched regions have been removed effectively
 nrow(links1) == length(proms.hg38)
 
 # filter out links containing an unmatched region and add new regions
@@ -135,8 +142,7 @@ nrow(links2) == length(links.hg38)
 
 # keep regions involving coords well matched 
 links3 <- inner_join(links1, links2 %>% select(frag1, frag2, new2), by = c("frag1", "frag2"))
-# inner_join(links1 %>% dplyr::select(frag1, new1), by = "frag1") %>%
-# inner_join(links2 %>% dplyr::select(frag2, new2), by = "frag2") 
+head(links3)
 
 # check if there is a decrease of links
 nrow(links)
@@ -156,15 +162,10 @@ head(links)
 # create individual columns for chr, start, end respectively 
 # 1. promoter
 # 2. "enhancer"
-links[c("chr.1", "start.1", "end.1")] <- str_split_fixed(links$frag1, "[.]", 3) 
-links[c("chr.2", "start.2", "end.2")] <- str_split_fixed(links$frag2, "[.]", 3)
-head(links)
-
-# change format of frag1 and frag2 columns to chr:start-end
-links$frag1 <- sub("[.]", ":", links$frag1) # replaces the first match
-links$frag1 <- sub("[.]", "-", links$frag1)
-links$frag2 <- sub("[.]", ":", links$frag2) # replaces the first match
-links$frag2 <- sub("[.]", "-", links$frag2)
+links[c("chr.1", "start.1")] <- str_split_fixed(links$frag1, ":", 2) 
+links[c("start.1", "end.1")] <- str_split_fixed(links$start.1, "-", 2) 
+links[c("chr.2", "start.2")] <- str_split_fixed(links$frag2, ":", 2)
+links[c("start.2", "end.2")] <- str_split_fixed(links$start.2, "-", 2) 
 head(links)
 
 # create ranges column 
@@ -172,17 +173,17 @@ links$ranges1 <- strsplit(links$frag1, ":", 2) %>% map(2)
 links$ranges2 <- strsplit(links$frag2, ":", 2) %>% map(2)
 head(links)
 
-# create GRanges objects, 
-links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE)   
-links2 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.2", start.field = "start.2", end.field = "end.2", keep.extra.columns = TRUE)
-
-rename(seqnames = "chr.1", start = "start.1", end = "end.1") %>%
+# create GRanges objects 
+links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE) %>%
+  as.data.frame() %>%
+  rename(seqnames = "chr.1", start = "start.1", end = "end.1") %>%
   dplyr::select(c("chr.1", "start.1", "end.1", "frag1", "frag2"))
+
 links2 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.2", start.field = "start.2", end.field = "end.2", keep.extra.columns = TRUE) %>%
-  liftOver(chain) %>%
   as.data.frame() %>% 
   rename(seqnames = "chr.2", start = "start.2", end = "end.2") %>%
   dplyr::select(c("chr.2", "start.2", "end.2", "frag1", "frag2"))
+
 nrow(links1)
 nrow(links2)
 
@@ -212,8 +213,12 @@ head(prom.cords)
 
 # format links in bed file format
 # treat frag1 as baits (promoter regions)
-baits <- links %>% separate(frag1, c("chr", "start", "end"), "[.]")
-baits <- baits %>% dplyr::select(c("chr", "start", "end", "frag2"))
+baits <- links
+baits[c("chr", "start")] <- str_split_fixed(baits$frag1, ":", 2)
+baits[c("start", "end")] <- str_split_fixed(baits$start, "-", 2) 
+baits <- baits %>%
+  dplyr::select(c("chr", "start", "end", "frag2"))
+head(baits)  
 
 # keep promoter regions from links that intersect with promoter coordinates
 # use findOverlaps method from GenomicRanges
@@ -231,13 +236,17 @@ ds.baits <- ds.baits %>% cbind(gene = prom.cords$gene_name[ovlp@from])
 head(ds.baits)
 
 # format baits in dataset so they match the links format
-ds.baits <- ds.baits %>% unite("frag1", 1:3, sep = ".")
+ds.baits$frag1 <- do.call(paste, c(ds.baits[1:2], sep= ":"))
+ds.baits$frag1 <- do.call(paste, c(ds.baits[c("frag1", "end")], sep= "-"))
+ds.baits <- ds.baits %>% select(-c("chr", "start", "end"))
 head(ds.baits)
 
 # look at all regions linked to these baits from links file, they essentially represent enhancers
 # get links from baits found in timecourse data
 ds.baits_ehcs <- ds.baits #frag2 represent the enhancers
-ds.baits_ehcs <- ds.baits_ehcs %>% separate(frag2, c("chr", "start", "end"), "[.]")
+ds.baits_ehcs[c("chr", "start")] <- str_split_fixed(ds.baits_ehcs$frag2, ":", 2)
+ds.baits_ehcs[c("start", "end")] <- str_split_fixed(ds.baits_ehcs$start, "-", 2) 
+head(ds.baits_ehcs)
 
 # filter for these enhancers that are present in my peakset
 ## (expand peak +/- 1kb and check for any overlap with pchic enhancers)
@@ -247,25 +256,32 @@ DefaultAssay(s.obj) <- "ATAC"
 peaks.vect <- rownames(s.obj)
 peaks <- data.frame(do.call(rbind, strsplit(peaks.vect, split = "-")))
 colnames(peaks) <- c("chr", "start", "end")
+head(peaks)
 # expand peaks +-1Kb
 peaks.ext <- peaks
 peaks.ext$start <- as.numeric(peaks$start) - 1000
 peaks.ext$end <- as.numeric(peaks$end) + 1000
 peaks.ext$peak <- peaks.vect
+head(peaks.ext)
 
 # find overlap between the dataset and HiC enhancers
-qry.peaks <-  makeGRangesFromDataFrame(ehcs)
-ref.peaks <-  makeGRangesFromDataFrame(peaks.ext, keep.extra.columns = TRUE)
+qry.peaks <-  makeGRangesFromDataFrame(ehcs, seqnames.field = "chr", start.field = "start", end.field = "end")
+ref.peaks <-  makeGRangesFromDataFrame(peaks.ext, seqnames.field = "chr", start.field = "start", end.field = "end", keep.extra.columns = TRUE)
 ovlp.peaks <- findOverlaps(qry.peaks, ref.peaks) # returns indexes of intersecting regions
 ovlp.peaks.indx <- ovlp.peaks@from
 peak.names <- peaks.vect[ovlp.peaks@to]
 ds.baits_ds.ehcs <- ds.baits_ehcs[ovlp.peaks.indx,]
 ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>% cbind(peak = peak.names)
-View(ds.baits_ds.ehcs)
+head(ds.baits_ds.ehcs)
+#View(ds.baits_ds.ehcs)
+
+# clean it
+ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>%
+  select(-c("chr", "start", "end"))
 
 # save links into a csv file 
 # IMPORTANT: 2 mandatory columns: peak and gene
-write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/", dataset, "_", celltype, "_pchic_links.csv"))
+write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/valdata/links/", dataset, "_", celltype, "_pchic_links.tsv"))
 
 #%%%%%%#
 # iPSC # 
