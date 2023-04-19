@@ -142,21 +142,24 @@ proms.hg38.err <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "
 links.hg38 <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords_hg38.bed"), character(), quote = "")
 links.hg38.err <- scan(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords_hg38_error.txt"), character(), quote = "")
 
-# filter out links containing an unmatched region and replace old regions
+# filter out links containing an unmatched region and add new regions
 links1 <- links %>%
-  filter(!frag1 %in% proms.hg38.err)
+  filter(!frag1 %in% proms.hg38.err) %>%
+  mutate(new1 = proms.hg38)
 
 # check if unamatched regions have been removed effectively
 nrow(links1) == length(proms.hg38)
 
-# filter out links containing an unmatched region and replace old regions
+# filter out links containing an unmatched region and add new regions
 links2 <- links %>%
-  filter(!frag2 %in% links.hg38.err)
+  filter(!frag2 %in% links.hg38.err) %>%
+  mutate(new2 = links.hg38)
 
 # check if unamatched regions have been removed effectively
 nrow(links2) == length(links.hg38)
 
-# PERQUÈ ELS LINKS CONVERTITS TENEN MËS ROWS SI AL UCSC DIU K TENEN LES MATEIXES QUE LINKS1 I 2 !?!?!?!?!!?
+# replace old cords (hg19) with new cords (hg38) 
+
 
 # create GRanges objects, 
 links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE)   
@@ -258,3 +261,11 @@ write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/",
 #%%%%%%#
 
 celltype <- "iPSC"
+
+# ALSO HG19
+
+# pcHI-C files
+# capt-CHiCAGO_interactions-iPSC-1.ibed
+# capt-CHiCAGO_interactions-iPSC-2.ibed
+# capt-CHiCAGO_interactions-iPSC-3.ibed
+
