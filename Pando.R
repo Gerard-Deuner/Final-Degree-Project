@@ -10,6 +10,9 @@ library(Seurat)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(qs)
 library(Signac)
+library(dplyr)
+library(tidyr)
+library(purrr)
 
 # Define dataset  
 dataset <- "timecourse" # timecourse | combined
