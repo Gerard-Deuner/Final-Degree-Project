@@ -490,9 +490,9 @@ ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>%
 # IMPORTANT: 2 mandatory columns: peak and gene
 write.csv(ds.baits_ds.ehcs, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_", celltype, "_pchic_links.tsv"))
 
-#######
+#%%%%%#
 # ALL #
-#######
+#%%%%%#
 
 ## merge all cell types pcHi-C links
 # read them
