@@ -15,7 +15,7 @@ library(purrr)
 args <- commandArgs(trailingOnly = TRUE)
 
 # define dataset
-dataset <- args[1]
+dataset <- args[1] # timecourse | combined
 
 #%%%%%%%%#
 # NEURON # 
