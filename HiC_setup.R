@@ -104,35 +104,10 @@ celltype <- "NPC"
 links <- read.csv("/g/scb/zaugg/deuner/valdata/pcHi-C/NPC/GSE86189_npc.po.all.txt.bz2", sep = "\t") # promoter | other links -> interested in this ones as other may represent enhancers
 head(links)
 
-# merge them 
-# links <- rbind(pp.links, po.links)
-
-# create individual columns for chr, start, end respectively 
-# 1. promoter
-# 2. "enhancer"
-links[c("chr.1", "start.1", "end.1")] <- str_split_fixed(links$frag1, "[.]", 3) 
-links[c("chr.2", "start.2", "end.2")] <- str_split_fixed(links$frag2, "[.]", 3)
-head(links)
-
-# change format of frag1 and frag2 columns to chr:start-end
-links$frag1 <- sub("[.]", ":", links$frag1) # replaces the first match
-links$frag1 <- sub("[.]", "-", links$frag1)
-links$frag2 <- sub("[.]", ":", links$frag2) # replaces the first match
-links$frag2 <- sub("[.]", "-", links$frag2)
-head(links)
-
 # pcHiC read data was mapped to human genome hg19 so we need to adapt the hg19 annotations to hg38 reference genome
-#library(rtracklayer)
-#chain <- import.chain("/g/scb/zaugg/deuner/valdata/hg19ToHg38.over.chain")
-
-# create ranges column 
-links$ranges1 <- strsplit(links$frag1, ":", 2) %>% map(2)
-links$ranges2 <- strsplit(links$frag2, ":", 2) %>% map(2)
-head(links)
-
-# save coordinates in separated files to convert them using liftOver webpage
-write.table(links$frag1, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/prom_cords.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
-write.table(links$frag2, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
+# save coordinates in separated files to convert them using UCSC liftOver webpage
+write.table(links$frag1, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/prom_cords_hg19.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
+write.table(links$frag2, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/", celltype, "/link_cords_hg19.csv"), row.names=FALSE, col.names = FALSE, quote = FALSE)
 
 # adapt coordinates from hg19 to hg38
 # using UCSC liftover: https://genome.ucsc.edu/cgi-bin/hgLiftOver
@@ -159,19 +134,43 @@ links2 <- links %>%
 nrow(links2) == length(links.hg38)
 
 # keep regions involving coords well matched 
-links3 <- inner_join(links1, links2, by = c("frag1", "frag2"))
+links3 <- inner_join(links1, links2 %>% select(frag1, frag2, new2), by = c("frag1", "frag2"))
 # inner_join(links1 %>% dplyr::select(frag1, new1), by = "frag1") %>%
 # inner_join(links2 %>% dplyr::select(frag2, new2), by = "frag2") 
 
 # check if there is a decrease of links
 nrow(links)
 nrow(links3)
+nrow(links3) <= nrow(links1) & nrow(links2)
+
+links <- links3
+rm(links3)
 
 # replace old cords (hg19) with new cords (hg38) 
 links$frag1 <- links$new1
 links$frag2 <- links$new2
-
 links <- links %>% select(-c("new1", "new2"))
+head(links)
+
+
+# create individual columns for chr, start, end respectively 
+# 1. promoter
+# 2. "enhancer"
+links[c("chr.1", "start.1", "end.1")] <- str_split_fixed(links$frag1, "[.]", 3) 
+links[c("chr.2", "start.2", "end.2")] <- str_split_fixed(links$frag2, "[.]", 3)
+head(links)
+
+# change format of frag1 and frag2 columns to chr:start-end
+links$frag1 <- sub("[.]", ":", links$frag1) # replaces the first match
+links$frag1 <- sub("[.]", "-", links$frag1)
+links$frag2 <- sub("[.]", ":", links$frag2) # replaces the first match
+links$frag2 <- sub("[.]", "-", links$frag2)
+head(links)
+
+# create ranges column 
+links$ranges1 <- strsplit(links$frag1, ":", 2) %>% map(2)
+links$ranges2 <- strsplit(links$frag2, ":", 2) %>% map(2)
+head(links)
 
 # create GRanges objects, 
 links1 <- makeGRangesFromDataFrame(links, seqnames.field = "chr.1", start.field = "start.1", end.field = "end.1", keep.extra.columns = TRUE)   
