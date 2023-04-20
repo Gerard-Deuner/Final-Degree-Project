@@ -51,9 +51,9 @@ seurat_object <- find_motifs(
   genome = BSgenome.Hsapiens.UCSC.hg38
 )
 
-# Code that fixes an error ecountered in infer_grn(). It inseured a one-to-one mapping between cand_regions and peak_ranges.
+# Code that fixes an error ecountered in infer_grn(). It insures a one-to-one mapping between cand_regions and peak_ranges.
 regions <- NetworkRegions(seurat_object)
-cand_ranges <- peakRanges@ranges %>% as.data.frame() %>% dplyr::rename("seqnames" = "names") %>% makeGRangesFromDataFrame()
+cand_ranges <- regions@ranges #%>% as.data.frame() %>% dplyr::rename("seqnames" = "names") %>% makeGRangesFromDataFrame()
 peak_ranges <- StringToGRanges(rownames(GetAssay(seurat_object, assay='ATAC')))
 peak_overlaps <- findOverlaps(cand_ranges, peak_ranges)
 
@@ -62,9 +62,9 @@ peak_overlaps_df <- data.frame(peak_overlaps)
 peak_overlaps_df <- peak_overlaps_df[!duplicated(peak_overlaps_df[['queryHits']]), ]
 peak_overlaps_df <- peak_overlaps_df[!duplicated(peak_overlaps_df[['subjectHits']]), ]
 
-new_motif_data <- peakRanges@motifs@data[peak_overlaps_df[['queryHits']], ]
+new_motif_data <- regions@motifs@data[peak_overlaps_df[['queryHits']], ]
 new_regions_peaks <- peak_overlaps_df[['subjectHits']]
-new_ranges_data <- peakRanges@ranges[peak_overlaps_df[['queryHits']]]
+new_ranges_data <- regions@ranges[peak_overlaps_df[['queryHits']]]
 
 seurat_object@grn@regions@motifs@data <- new_motif_data
 seurat_object@grn@regions@peaks <- new_regions_peaks
