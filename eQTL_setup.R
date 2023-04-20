@@ -98,7 +98,7 @@ res <- 10
 # for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
-  grn <- read_tsv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+  grn <- read.csv(paste0("/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode_spearman/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
   
   # read genes and their positions from Ensembl:
   genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
