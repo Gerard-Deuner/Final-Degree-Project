@@ -219,7 +219,7 @@ res <- 10
   
   # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
   dir.create(paste0(out.dir, dataset, "_", corr.method, "/"))
-  write_tsv(nearest_links_validated, paste0(out.dir, dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
+  write.csv(nearest_links_validated, paste0(out.dir, dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
   
   #################################
   # SETUP AND GRN VALIDATION DONE #
