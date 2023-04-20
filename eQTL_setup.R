@@ -32,7 +32,7 @@ if (nature == "all"){
 } else {
   # set eQTL data and output directory
   data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-  out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/output/")
+  out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
   
   # list of files
   file.names <- list.files(data.dir) 
