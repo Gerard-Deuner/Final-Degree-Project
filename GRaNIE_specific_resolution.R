@@ -49,9 +49,6 @@ s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudob
                                  prepareData = TRUE,
                                  saveSeuratObject = TRUE)
 
-# create outputs directory
-dir.create(paste0(seurat_outputFolder, "/Batch_Mode_Outputs"))
-
 # runGRaNIE for that resolution
 GRN = runGRaNIE(
   datasetName = "Timecourse_Dataset",
@@ -61,4 +58,7 @@ GRN = runGRaNIE(
   file_metadata = paste0(seurat_outputFolder,"/metadata_wsnn_res.", res, ".tsv.gz"),
   genomeAssembly = "hg38", 
   nCores = 8, 
-  runNetworkAnalyses = FALSE) 
+  runNetworkAnalyses = FALSE,
+  correlation.method = correlation.method) 
+
+
