@@ -506,7 +506,7 @@ ipsc <- read.csv(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_
 # add cell type id 
 neuron$celltype <- rep("Neuron", nrow(neuron))
 npc$celltype <- rep("NPC", nrow(npc))
-ipsc$celltype <- rep("iPSC", nrow(iPSC))
+ipsc$celltype <- rep("iPSC", nrow(ipsc))
 
 # combine them all
 all <- rbind(neuron, npc, ipsc)
