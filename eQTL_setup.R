@@ -11,6 +11,7 @@ library(tidyr)
 library(plyranges)
 library(data.table)
 library(purrr)
+library(stringr)
 
 # define dataset
 dataset <- "timecourse" # timecourse | combined
