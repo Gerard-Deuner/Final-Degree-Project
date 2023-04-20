@@ -673,7 +673,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                                  allowMissingTFs = FALSE, allowMissingGenes = FALSE,
                                  peak_gene.r_range = c(0,1))
   # run analysis on FDRs
-  GRN = generateStatsSummary(GRN, TF_peak.fdr = c(0.05, 0.1, 0.2, 0.25. 0.3), TF_peak.connectionTypes = "all",
+  GRN = generateStatsSummary(GRN, TF_peak.fdr = c(0.05, 0.1, 0.2, 0.25, 0.3), TF_peak.connectionTypes = "all",
                              peak_gene.fdr = c(0.1, 0.2, 0.3), peak_gene.r_range = c(0, 1), allowMissingGenes = c(FALSE,TRUE), 
                              allowMissingTFs = c(FALSE), gene.types = c("protein_coding", "lincRNA"),
                              forceRerun = TRUE)
