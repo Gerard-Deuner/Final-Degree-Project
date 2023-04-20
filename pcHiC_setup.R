@@ -87,7 +87,7 @@ ovlp.peaks.indx <- ovlp.peaks@from
 peak.names <- peaks.vect[ovlp.peaks@to]
 ds.baits_ds.ehcs <- ds.baits_ehcs[ovlp.peaks.indx,]
 ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>% cbind(peak = peak.names)
-View(ds.baits_ds.ehcs)
+#View(ds.baits_ds.ehcs)
 
 # keep gene and peak columns
 ds.baits_ds.ehcs <- ds.baits_ds.ehcs %>%
