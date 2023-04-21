@@ -34,7 +34,7 @@ dir.create(out.dir) # create dir if it doesn't exist already
 GRNs.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method)
 
 # PCHiC links path
-links.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_", cell.type, "_pchic_links.csv")
+links.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_", cell.type, "_pchic_links.tsv")
 links <- read.csv(links.dir) 
 
 # subset just useful columns 
