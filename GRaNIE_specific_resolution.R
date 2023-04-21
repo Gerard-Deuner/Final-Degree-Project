@@ -45,13 +45,14 @@ seurat_outputFolder = paste0(path,"/outputdata/", dataset, "_", correlation.meth
 # Prepare data
 s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudobulk_source = paste0("wsnn_res.", res),
                                  file_RNA_features = file_RNA_features,
-                                 prepareData = FALSE,
+                                 clusterResolutions = res,
+                                 prepareData = TRUE,
                                  saveSeuratObject = TRUE)
 
 # runGRaNIE for that resolution
 GRN = runGRaNIE(
   datasetName = "Timecourse_Dataset",
-  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_celltype_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"), 
+  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_wsnn_res.", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"), 
   file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_wsnn_res.", res, ".tsv.gz"), 
   file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_wsnn_res.", res, ".tsv.gz"), 
   file_metadata = paste0(seurat_outputFolder,"/metadata_wsnn_res.", res, ".tsv.gz"),
@@ -59,3 +60,5 @@ GRN = runGRaNIE(
   nCores = 8, 
   runNetworkAnalyses = FALSE,
   correlation.method = correlation.method) 
+
+
