@@ -139,7 +139,7 @@ for (res in resolutions){
   FP.vec <- c(FP.vec, FP)
   
   if ((first == TRUE) & (sum(bc) > 0)){
-    ROC <- roc(GRN.links$bc, GRN_links$peak_gene.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
+    ROC <- roc(GRN.links$bc, GRN.links$peak_gene.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
                xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
                col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = FALSE, print.auc.x = 115, print.auc.y = aucy[j])
     legend("bottomright",  legend = resolutions, col = colors, ncol = 2)
@@ -147,7 +147,7 @@ for (res in resolutions){
     print(ci.auc(ROC))
   }
   if ((first == FALSE) & (sum(bc) > 0)){ 
-    ROC <- roc(GRN.links$bc, GRN_links$peak_gene.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
+    ROC <- roc(GRN.links$bc, GRN.links$peak_gene.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
                xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
                col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = TRUE, print.auc.x = 115, print.auc.y = aucy[j])
     legend("bottomright", legend = resolutions, col = colors, lwd = 4, ncol = 2)
