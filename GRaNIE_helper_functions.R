@@ -462,7 +462,7 @@ runGRaNIE_batchMode <- function (datasetName,
                                  minSizePeaks = 5,
                                  promoterRange = 250000, useGCCorrection = FALSE,
                                  TF_peak.fdr.threshold = 0.2,
-                                 peak_gene.fdr.threshold = 0.2, # changed, previously set to 0.1 -> no results obtained
+                                 peak_gene.fdr.threshold = 0.1,
                                  runNetworkAnalyses = FALSE, 
                                  forceRerun = TRUE,
                                  correlation.method = "pearson") {
@@ -554,7 +554,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       minSizePeaks = 5,
                       promoterRange = 250000, 
                       useGCCorrection = FALSE,
-                      TF_peak.fdr.threshold = 0.3, #originally 0.2
+                      TF_peak.fdr.threshold = 0.2, 
                       peak_gene.fdr.threshold = 0.1, 
                       runNetworkAnalyses = FALSE, 
                       nCores = 8,
