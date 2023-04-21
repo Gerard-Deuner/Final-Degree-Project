@@ -338,7 +338,7 @@ res <- 10
   min_or <- min(unlist(or))
   max_or <- max(unlist(or))
   
-  filename <- paste0("g/scb/zaugg/deuner/valdata/eQTL/setup_outputs/or/",  dataset, "_", corr.method, "/", "-FDR", eQTL.FDR, "_in_", 
+  filename <- paste0("g/scb/zaugg/deuner/valdata/eQTL/", nature, "setup_outputs/or/",  dataset, "_", corr.method, "-FDR", eQTL.FDR, "_in_", 
                      res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
   write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
 
