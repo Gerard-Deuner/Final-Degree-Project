@@ -27,7 +27,7 @@ corr.method <- args[2] # pearson | spearman
 cell.type <- args[3] # neuron | NPC | iPSC | all
 
 # set output dir
-out.dir <- paste0("/g/scb/zaugg/deuner/valdata/results/", cell.type, "_", dataset, "_", corr.method, "/")
+out.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/results/", cell.type, "_", dataset, "_", corr.method, "/")
 dir.create(out.dir) # create dir if it doesn't exist already
 
 # path of GRNs
@@ -40,6 +40,7 @@ links <- read.csv(links.dir)
 # subset just useful columns 
 links <- links %>%
   select(gene, peak)
+head(links)
 
 # convert gene symbols to ENSEMBL IDs
 require('biomaRt')
@@ -54,7 +55,7 @@ annotLookup <- getBM(
   uniqueRows = TRUE)
 colnames(annotLookup)[1] <- "gene"
 links <- links %>% inner_join(annotLookup, by = "gene", multiple = "all") 
-colnames(links)[14] <- "gene.ENSEMBL"
+colnames(links)[3] <- "gene.ENSEMBL"
 head(annotLookup)
 head(links)
 
