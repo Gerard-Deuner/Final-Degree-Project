@@ -13,6 +13,7 @@ library(dplyr)
 library(qs)
 library(Seurat)
 library(ggplot2)
+library(pROC)
 
 # read arguments from command line
 args <- commandArgs(trailingOnly = TRUE)
