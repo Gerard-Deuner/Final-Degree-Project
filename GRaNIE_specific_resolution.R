@@ -45,8 +45,7 @@ seurat_outputFolder = paste0(path,"/outputdata/", dataset, "_", correlation.meth
 # Prepare data
 s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudobulk_source = paste0("wsnn_res.", res),
                                  file_RNA_features = file_RNA_features,
-                                 prepareData = TRUE,
-                                 clusterResolutions = res,
+                                 prepareData = FALSE,
                                  saveSeuratObject = TRUE)
 
 # runGRaNIE for that resolution
