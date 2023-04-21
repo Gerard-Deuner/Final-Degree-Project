@@ -1,12 +1,12 @@
 #############################
-# pc Hi-C Validation script #
+# pcHi-C Validation script #
 #############################
 
 ## Description: This script performs promoter capture Hi-C validation on the resulting peak to gene links to any gene regulatory network.
 ## Input: path of the csv file (or similar) containing peak-gene links information / path of the GRNs to analyse 
 ## Output: plots showing the analyses
 
-## Data cell types: Neuron(hg38), NPC (hg19), ESC (naïve and primed) (hg38)
+## Data cell types: Neuron, NPC and iPSC
 
 # load libraries
 library(dplyr)
@@ -14,19 +14,32 @@ library(qs)
 library(Seurat)
 library(ggplot2)
 
-# set up name of analysis (must coincide with GRNs name)
-name <- ""
+# read arguments from command line
+args <- commandArgs(trailingOnly = TRUE)
 
-# set up dataset (timecourse or combined)
-dataset <- ""
+# set up dataset
+dataset <- args[1] # timecourse | combined
+
+# set up correlation method
+corr.method <- args[2] # pearson | spearman
+
+# set up which cell type links are used for validation
+cell.type <- args[3] # neuron | NPC | iPSC | all
+
+# set output dir
+out.dir <- paste0("/g/scb/zaugg/deuner/valdata/results/", cell.type, "_", dataset, "_", corr.method, "/")
+dir.create(out.dir) # create dir if it doesn't exist already
 
 # path of GRNs
-GRNs.dir <- "//"
+GRNs.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method)
 
 # PCHiC links path
-links.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/validationdata/", dataset, "_pchic_links.csv")
-links <- read.csv(links.dir)
-head(links)
+links.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_", cell.type, "_pchic_links.csv")
+links <- read.csv(links.dir) 
+
+# subset just useful columns 
+links <- links %>%
+  select(gene, peak)
 
 # convert gene symbols to ENSEMBL IDs
 require('biomaRt')
@@ -49,10 +62,8 @@ head(links)
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
 
 # set colors for ROC curves
-colors <- c("darkred","deeppink4" , "deeppink", "pink","violet", 
-                     "purple", "darkmagenta",  "darkblue", "blue", "darkcyan", 
-                     "lightblue", "turquoise", "lightgreen", "green", "darkolivegreen1",
-                     "yellow", "darkgoldenrod2",  "chocolate", "red")
+colors <- c("#FFC107", "#2196F3", "#4CAF50", "#FF5722", "#9C27B0", "#3F51B5", "#FFEB3B", "#8BC34A", "#E91E63", 
+            "#673AB7", "#00BCD4", "#FF9800", "#CDDC39", "#795548", "#607D8B", "#9E9E9E", "#F44336", "#00ACC1")
                      
 # set vecor of auc positioning in y axis
 aucy <- seq(10, 110, by = 5)
@@ -145,20 +156,21 @@ for (res in resolutions){
 
 # barplots of TP vs FP
 TPFP.df <- data.frame(TPFP = c(TP.vec, FP.vec), cat = c(rep("TP", 19), rep("FP", 19)), res = c(resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)), resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))))
-ggplot(TPFP.df, aes(x = as.factor(res), y = TPFP, fill = cat)) + 
+p1 <- ggplot(TPFP.df, aes(x = as.factor(res), y = TPFP, fill = cat)) + 
   geom_bar(position = "dodge", stat = "identity") + 
   theme_classic() + 
   scale_fill_manual(values = c("#E3B448", "#3A6B35"))
+ggsave(paste0(out.dir, "TPvsFP.pdf"), p1, device = "pdf")
 
 # compute ratio of TPs vs FPs
 TPFP.vec <- TP.vec/FP.vec
 ratio.df <- data.frame(res = resolutions, ratio = TPFP.vec)
-ggplot(ratio.df, aes(x = as.factor(res), y = ratio)) + 
+p2 <- ggplot(ratio.df, aes(x = as.factor(res), y = ratio)) + 
   geom_bar(stat = "identity", fill = "#993300", color = "black") + 
   theme_classic() + 
   labs(x = "Resolutions", y = "TP / FP", title = "TP and FP ratio per resolution") + 
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
-
+ggsave(paste0(out.dir, "TPvsFP_ratio.pdf"), p2, device = "pdf")
 
 # Check if the TPs are shared 
 TP.peak.gene <- TP.all %>% dplyr::select(c("peak", "gene.ENSEMBL", "res"))
@@ -176,7 +188,7 @@ TP.peak.gene <- inner_join(TP.peak.gene, TP.peak.gene.counts, by = c("peak", "ge
 TP.peak.gene$shared <- ifelse(TP.peak.gene$n > 1, TRUE, FALSE)
 
 # plot count of shared links vs non-shared links
-p1 <- ggplot(TP.peak.gene %>% distinct(peak, gene.ENSEMBL, .keep_all = TRUE), aes(shared, fill = shared)) + 
+p3 <- ggplot(TP.peak.gene %>% distinct(peak, gene.ENSEMBL, .keep_all = TRUE), aes(shared, fill = shared)) + 
   geom_bar(stat = "count") + 
   theme_classic() + 
   scale_fill_manual(values = c("#E3B448", "#3A6B35")) + 
@@ -184,34 +196,36 @@ p1 <- ggplot(TP.peak.gene %>% distinct(peak, gene.ENSEMBL, .keep_all = TRUE), ae
   geom_text(stat='count', aes(label=..count..), vjust=-1) + 
   theme(legend.position = "none")
 
-p2 <- ggplot(TP.peak.gene, aes(shared, fill = shared)) + 
+p4 <- ggplot(TP.peak.gene, aes(shared, fill = shared)) + 
   geom_bar(stat = "count") + 
   theme_classic() + 
   scale_fill_manual(values = c("#E3B448", "#3A6B35")) + 
   labs(title = "Are the links shared? (all links)") + 
   geom_text(stat='count', aes(label=..count..), vjust=-1)
 
-p1 + p2
+ggsave(paste0(out.dir, "shared_links_unique.pdf"), p3, device = "pdf")
+ggsave(paste0(out.dir, "shared_links_all.pdf"), p4, device = "pdf")
 
 # plot duplicated vs unique links per cluster resolution
-ggplot(TP.peak.gene, aes(as.factor(res), fill = shared)) + 
+p5 <- ggplot(TP.peak.gene, aes(as.factor(res), fill = shared)) + 
   geom_bar(stat = "count", position = "dodge") + 
   theme_classic() +
   scale_fill_manual(values = c("#E3B448", "#3A6B35")) + 
   labs(title = "Are the links shared?", x = "Cluster Resolutions")
+ggsave(paste0(out.dir, "duplicate_vs_unique_links.pdf"), p5, device = "pdf")
 
 
 # plot most frequent links across resolutions
 TP.peak.gene.counts$link <- paste(TP.peak.gene.counts$peak, TP.peak.gene.counts$gene.ENSEMBL, sep = "_")
 TP.peak.gene.counts$shared <- ifelse(TP.peak.gene.counts$n > 1, TRUE, FALSE)
 
-ggplot(TP.peak.gene.counts %>% arrange(desc(n)) %>% head(10), aes(x = link, y = n, fill = link)) + 
+p6 <- ggplot(TP.peak.gene.counts %>% arrange(desc(n)) %>% head(10), aes(x = link, y = n, fill = link)) + 
   geom_bar(stat = "identity") + 
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), legend.position = "none") + 
   scale_fill_viridis_d() + 
   labs(y = "count", title = "Most frequent links across resolutions", caption = "Top 10 Most Frequent Links") 
-
+ggsave(paste0(out.dir, "most_freq_links.pdf"), p6, device = "pdf")
 
 # plot only duplicated links and their corresponding cluster resolutions
 library(RColorBrewer)
@@ -223,9 +237,10 @@ palette3_all
 palette3 <- sample(palette3_all, 16)                    # Sample colors
 palette3
 
-ggplot(TP.peak.gene %>% dplyr::filter(shared == TRUE) , aes(x = link, fill = as.factor(res))) + 
+p7 <- ggplot(TP.peak.gene %>% dplyr::filter(shared == TRUE) , aes(x = link, fill = as.factor(res))) + 
   geom_bar(stat = "count") + 
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(y = "count", title = "To which eGRNs do the shared links belong?", fill = "Resolutions", caption = "35 Different Links") + 
   scale_fill_manual(values = palette3)
+ggsave(paste0(out.dir, "links_GRN_mapping.pdf"), p7, device = "pdf")
