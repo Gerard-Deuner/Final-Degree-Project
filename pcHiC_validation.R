@@ -31,7 +31,7 @@ out.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/results/", cell.type, "_",
 dir.create(out.dir) # create dir if it doesn't exist already
 
 # path of GRNs
-GRNs.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method)
+GRNs.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/")
 
 # PCHiC links path
 links.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/links/", dataset, "_", cell.type, "_pchic_links.tsv")
@@ -87,7 +87,7 @@ for (res in resolutions){
   j <- j + 1
   
   # set up GRN directory
-  GRN.dir <- paste0(path, "output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/")
+  GRN.dir <- paste0(GRNs.dir, "output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/")
   # read GRN object
   GRN <- qread(paste0(GRN.dir, "GRN.qs"))
   
