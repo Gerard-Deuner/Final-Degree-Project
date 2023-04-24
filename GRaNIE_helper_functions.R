@@ -127,7 +127,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
                             algorithm = clusteringAlgorithm, verbose = FALSE)
       
       clusterColName = paste0("wsnn_res.", clusterResolution)
-      Idents(seu.s) = clusterColName
+      Idents(seu.s) = seu.s[["clusterColName"]] # before: clusterColName
       seu.s@meta.data[[clusterColName]] = paste0("cluster", seu.s@meta.data[[clusterColName]])
       seu.s@meta.data$seurat_clusters = paste0("cluster", seu.s@meta.data$seurat_clusters)
       
@@ -216,7 +216,8 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     seu.s@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.s@meta.data[[pseudobulk_source]])
     seu.s@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.s@meta.data[[pseudobulk_source]])
     
-    Idents(seu.s) =  pseudobulk_source
+    
+    Idents(seu.s) = seu.s[["pseudobulk_source"]]
     
     if (doDimPlots) {
       pdfFile = paste0(outputDir, "/dimPlot_combined_", pseudobulk_source, ".pdf")
@@ -249,7 +250,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     
     futile.logger::flog.info(paste0(" Writing ATAC counts to file ", file_in_atac))
     # added by me so rna and atac sample names match 
-    names(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] <- levels(seu.s)
+    #names(atac.pseudobulk.clean)[2:ncol(atac.pseudobulk.clean)] <- levels(seu.s)
     write_tsv(atac.pseudobulk.clean, file_in_atac)
     
     .printScarcity(atac.pseudobulk.clean, type = "ATAC")
@@ -304,7 +305,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
   futile.logger::flog.info(paste0(" Writing metadata to file ", file_metadata))
   write_tsv(metadata, file_metadata)
 }
-
+                                                          # before: "ident"
 .aggregateCounts <- function (seu.s, assayName, groupBy = "ident", sumCounts, slotName = "counts", ID_column = "peakID") {
   
   checkmate::assertSubset(slotName, c("scale.data", "counts", "data"))
@@ -578,7 +579,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   metadata.all = read_tsv(file_metadata) 
   
   # added by me so rna and atac sample names match 
-  names(countsATAC)[2:ncol(countsATAC)] <- names(countsRNA)[2:ncol(countsRNA)]
+  # names(countsATAC)[2:ncol(countsATAC)] <- names(countsRNA)[2:ncol(countsRNA)]
   
   # Arbitrary list with information and metadata that is stored within the GRN object
   metadata.l = list(name = datasetName,
