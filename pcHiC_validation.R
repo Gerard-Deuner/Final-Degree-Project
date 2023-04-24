@@ -236,7 +236,7 @@ palette3_all <- unlist(mapply(brewer.pal,                     # Create vector wi
                               palette3_info$maxcolors,
                               rownames(palette3_info)))
 palette3_all 
-palette3 <- sample(palette3_all, 16)                    # Sample colors
+palette3 <- sample(palette3_all, 19)                    # Sample colors
 palette3
 
 p7 <- ggplot(TP.peak.gene %>% dplyr::filter(shared == TRUE) , aes(x = link, fill = as.factor(res))) + 
