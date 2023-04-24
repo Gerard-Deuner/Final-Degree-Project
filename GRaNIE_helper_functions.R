@@ -127,7 +127,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
                             algorithm = clusteringAlgorithm, verbose = FALSE)
       
       clusterColName = paste0("wsnn_res.", clusterResolution)
-      Idents(seu.s) = seu.s[["clusterColName"]] # before: clusterColName
+      Idents(seu.s) = seu.s[[clusterColName]] # before: clusterColName
       seu.s@meta.data[[clusterColName]] = paste0("cluster", seu.s@meta.data[[clusterColName]])
       seu.s@meta.data$seurat_clusters = paste0("cluster", seu.s@meta.data$seurat_clusters)
       
@@ -217,7 +217,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     seu.s@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.s@meta.data[[pseudobulk_source]])
     
     
-    Idents(seu.s) = seu.s[["pseudobulk_source"]]
+    Idents(seu.s) = seu.s[[pseudobulk_source]]
     
     if (doDimPlots) {
       pdfFile = paste0(outputDir, "/dimPlot_combined_", pseudobulk_source, ".pdf")
