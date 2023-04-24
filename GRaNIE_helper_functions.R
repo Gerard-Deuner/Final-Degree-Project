@@ -142,7 +142,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       
       ### Count aggregation
       futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
-      rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = pseudobulk_source, sumCounts, ID_column = "gene") #previous: groupBy = "ident"
+      rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = clusterColName, sumCounts, ID_column = "gene") #previous: groupBy = "ident"
       
       # rna.before = GetAssayData(object = seu.s, assay = "RNA", slot = "counts")
       # rna.before2 = GetAssayData(object = seu.s, assay = "RNA", slot = "data")
@@ -166,7 +166,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       ########
       
       futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
-      atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = pseudobulk_source, sumCounts, ID_column= "peakID") #previous: groupBy = "ident"
+      atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = clusterColName, sumCounts, ID_column= "peakID") #previous: groupBy = "ident"
       
       
       # Replace the first hyphen with a colon
