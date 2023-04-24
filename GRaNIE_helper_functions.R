@@ -142,7 +142,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       
       ### Count aggregation
       futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
-      rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = "ident", sumCounts, ID_column = "gene")
+      rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = pseudobulk_source, sumCounts, ID_column = "gene") #previous: groupBy = "ident"
       
       # rna.before = GetAssayData(object = seu.s, assay = "RNA", slot = "counts")
       # rna.before2 = GetAssayData(object = seu.s, assay = "RNA", slot = "data")
@@ -166,7 +166,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
       ########
       
       futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
-      atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = "ident", sumCounts, ID_column= "peakID")
+      atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = pseudobulk_source, sumCounts, ID_column= "peakID") #previous: groupBy = "ident"
       
       
       # Replace the first hyphen with a colon
@@ -230,7 +230,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     
     # RNA #
     futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
-    rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = "ident", ID_column = "gene", sumCounts)
+    rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = pseudobulk_source, ID_column = "gene", sumCounts) #previously: groupBy = "ident"
     
     # Merge with the actual features and their correct mappings.
     rna.pseudobulk.clean2 = .addEnsemblIDs(rna.pseudobulk.clean, mapping = features)
@@ -243,7 +243,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
     
     # ATAC #
     futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
-    atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = "ident", sumCounts, ID_column= "peakID")
+    atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = pseudobulk_source, sumCounts, ID_column= "peakID") #previously: groupBy = "ident"
     
     # Replace the first hyphen with a colon
     atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
@@ -305,7 +305,7 @@ prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeurat
   futile.logger::flog.info(paste0(" Writing metadata to file ", file_metadata))
   write_tsv(metadata, file_metadata)
 }
-                                                          # before: "ident"
+                                                          
 .aggregateCounts <- function (seu.s, assayName, groupBy = "ident", sumCounts, slotName = "counts", ID_column = "peakID") {
   
   checkmate::assertSubset(slotName, c("scale.data", "counts", "data"))
