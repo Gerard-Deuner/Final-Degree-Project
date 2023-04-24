@@ -56,13 +56,13 @@ ref <-  makeGRangesFromDataFrame(tc.peaks, keep.extra.columns = TRUE)
 qry <-  makeGRangesFromDataFrame(chip)
 ovlp <- findOverlaps(qry, ref) # returns indexes of intersecting regions
 head(ovlp)
-ovlp.indx <- ovlp@to
+ovlp.indx <- ovlp@from
 
 # subset baits overlapping dataset gene promoters
 chip <-  chip[ovlp.indx,]
 
 # add peak column
-chip$peak <- tc.peaks[ovlp@from, "peak"]
+chip$peak <- tc.peaks[ovlp@to, "peak"]
 head(chip)
 
 # important columns: TF and peak. Keep also celltype column
