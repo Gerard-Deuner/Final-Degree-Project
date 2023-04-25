@@ -54,9 +54,9 @@ annotLookup <- getBM(
     'ensembl_gene_id',
     'gene_biotype'),
   uniqueRows = TRUE)
-colnames(annotLookup)[1] <- "gene"
+colnames(annotLookup)[1:2] <- c("gene", "gene.ENSEMBL")
 links <- links %>% inner_join(annotLookup, by = "gene", multiple = "all") 
-colnames(links)[3] <- "gene.ENSEMBL"
+
 head(annotLookup)
 head(links)
 
@@ -83,8 +83,9 @@ FP.vec <- c()
 # dataframe where all peak-gene links will be stored (independent of the resolution)
 TP.all <- data.frame()
 
-# list where all the GRN links dfs will be stored no matter if they are validated or not
-GRN.links.all.list <- list()
+# df where all the GRN links will be stored no matter if they are validated or not
+GRN.links.all <- as.data.frame(matrix(nrow = 0, ncol = 4))
+names(GRN.links.all) <- c("gene", "peak", "res", "bc")
 
 for (res in resolutions){
   # set index
@@ -122,10 +123,15 @@ for (res in resolutions){
   GRN.links$bc <- bc
   # create an confusion matrix 
   conf.m <- table(bc)
+  # add resolution information to the GRN.links df
+  GRN.links$resolution <- rep(resolutions[j], nrow(GRN.links))
+  # get gene names 
+  GRN.links <- GRN.links %>%
+    inner_join(annotLookup, by = "gene.ENSEMBL", multiple = "all") 
   
-  # store GRN links data in GRNs list
-  GRN.links.all.list <- append(GRN.links.all.list, assign(paste("GRN_links", res, sep = "."), GRN.links))
-  
+  # store GRN links data in df for all links
+  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(gene, peak, resolution, bc))
+
   # Compute ROC curve
   par(pty = "s")
   
@@ -161,7 +167,7 @@ for (res in resolutions){
 
 # Save all the GRNs links found in the pcHiC data
 dir.create(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/"))
-GRN.links.all <- do.call("rbind", GRN.links.all.list)
+names(GRN.links.all)[4] <- c("validated")
 head(GRN.links.all)
 write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", dataset, "_", corr.method, ".csv"))
 
