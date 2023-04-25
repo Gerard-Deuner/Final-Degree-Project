@@ -137,7 +137,7 @@ ElbowPlot(comb.s, ndims = 40)
 ## The point where the principal components only contribute 5% of standard deviation and the principal components cumulatively contribute 90% of the standard deviation.
 ## The point where the percent change in variation between the consecutive PCs is less than 0.1%.
 ## We will start by calculating the first metric:
-  
+
 # Determine percent of variation associated with each PC
 pct <- comb.s[["pca"]]@stdev / sum(comb.s[["pca"]]@stdev) * 100
 
@@ -167,7 +167,7 @@ comb.s[["res.0.5"]] <- Idents(comb.s)
 # UMAP
 #comb.s <- RunUMAP(comb.s, dims = 1:18, umap.method = "umap-learn")
 comb.s<- RunUMAP(comb.s, umap.method = "umap-learn", dims = 1:18, min.dist = 0.5, spread = 1, negative.sample.rate = 5, 
-                       n.epochs = NULL, n.components = 2, learning.rate = 1) 
+                 n.epochs = NULL, n.components = 2, learning.rate = 1) 
 DimPlot(comb.s, reduction = "umap")
 DimPlot(comb.s, reduction = "umap", group.by = "orig.ident")
 
@@ -510,6 +510,34 @@ p1 | p2
 # Save seurat object
 qsave(comb.s, paste0(work.dir, "tmp/combined.pp.seuratObject.qs"))
 
-º# Read object
+# Read object
 comb.s <- qread(paste0(work.dir, "tmp/combined.pp.seuratObject.qs"))
 FeaturePlot(comb.s, reduction = "umap", features = c("nCount_RNA", "nFeature_RNA", "percent.mt", "percent.ribo"))
+
+###########################
+# REMOVE MICROGLIAL CELLS #
+###########################
+
+# Read the seurat
+comb.s <- qread(paste0(work.dir, "tmp/combined.pp.seuratObject.qs"))
+
+DimPlot(comb.s, reduction = "wnn.umap", group.by = "wsnn_res.0.5", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
+DimPlot(comb.s, reduction = "wnn.umap", group.by = "celltype_wnn", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
+
+# remove microglia and very small clusters
+comb.s2 <- comb.s %>%
+  subset(subset = wsnn_res.0.5 != 24) %>%
+  subset(subset = wsnn_res.0.5 != 19) %>%
+  subset(subset = wsnn_res.0.5 != 17) %>%
+  subset(subset = celltype_wnn != "NPC-8")
+  
+
+# check if I removed the cells correctly
+table(comb.s2$celltype_wnn)
+
+
+# take a look at the UMAP without those cell types
+DimPlot(comb.s2, reduction = "wnn.umap", group.by = "celltype_wnn", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
+
+# Save seurat object
+qsave(comb.s2, paste0(work.dir, "tmp/combined.pp.nomicro.seuratObject.qs"))
