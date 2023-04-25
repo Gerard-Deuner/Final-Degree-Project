@@ -466,7 +466,7 @@ runGRaNIE_batchMode <- function (datasetName,
                                  peak_gene.fdr.threshold = 0.1,
                                  runNetworkAnalyses = FALSE, 
                                  forceRerun = TRUE,
-                                 correlation.method = "pearson") {
+                                 correlation.method) {
   
   
   library(tidyverse)
@@ -523,7 +523,8 @@ runGRaNIE_batchMode <- function (datasetName,
                             TF_peak.fdr.threshold = TF_peak.fdr.threshold,
                             peak_gene.fdr.threshold = peak_gene.fdr.threshold,
                             runNetworkAnalyses = runNetworkAnalyses, 
-                            forceRerun = forceRerun
+                            forceRerun = forceRerun,
+                            correlation.method = corr.method
           )
           
         } # end for ATAC normalization
@@ -560,7 +561,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                       runNetworkAnalyses = FALSE, 
                       nCores = 8,
                       forceRerun = TRUE,
-                      correlation.method = correlation.method
+                      correlation.method
 ) {
   
   library(tidyverse)
