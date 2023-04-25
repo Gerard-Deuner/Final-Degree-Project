@@ -40,7 +40,7 @@ links <- read.csv(links.dir)
 
 # subset just useful columns 
 links <- links %>%
-  select(gene, peak)
+  dplyr::select(gene, peak)
 head(links)
 
 # convert gene symbols to ENSEMBL IDs
@@ -83,6 +83,9 @@ FP.vec <- c()
 # dataframe where all peak-gene links will be stored (independent of the resolution)
 TP.all <- data.frame()
 
+# list where all the GRN links dfs will be stored no matter if they are validated or not
+GRN.links.all.list <- list()
+
 for (res in resolutions){
   # set index
   j <- j + 1
@@ -120,8 +123,8 @@ for (res in resolutions){
   # create an confusion matrix 
   conf.m <- table(bc)
   
-  # store GRN links data in a variable
-  assign(paste("GRN_links", res, sep = "."), GRN.links)
+  # store GRN links data in GRNs list
+  GRN.links.all.list <- append(GRN.links.all.list, assign(paste("GRN_links", res, sep = "."), GRN.links))
   
   # Compute ROC curve
   par(pty = "s")
@@ -155,6 +158,13 @@ for (res in resolutions){
   }
   
 }
+
+# Save all the GRNs links found in the pcHiC data
+dir.create(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/"))
+GRN.links.all <- do.call("rbind", GRN.links.all.list)
+head(GRN.links.all)
+write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", dataset, "_", corr.method, ".csv"))
+
 
 # barplots of TP vs FP
 TPFP.df <- data.frame(TPFP = c(TP.vec, FP.vec), cat = c(rep("TP", 19), rep("FP", 19)), res = c(resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)), resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))))
