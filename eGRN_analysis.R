@@ -6,6 +6,7 @@
 library(Seurat)
 library(qs)
 library(dplyr)
+library(GRaNIE)
 
 # # load eGRN
 # GRN <- qread("/g/scb/zaugg/deuner/GRaNIE/outputdata/combined_pearson_Res_16/output_pseudobulk_wsnn_res.16_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
