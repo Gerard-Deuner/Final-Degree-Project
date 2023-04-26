@@ -31,7 +31,7 @@ if (nature == "all"){
   file.names.brain <- grep(".txt.gz", file.names.brain, value = TRUE)
   file.names.hipsci <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/")
   file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
-  file.names <- c(file.names.metabrain, file.names.hipsci)
+  file.names <- c(file.names.brain, file.names.hipsci)
 } else {
   # set eQTL data directory
   data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
