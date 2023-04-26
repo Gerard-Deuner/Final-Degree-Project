@@ -83,6 +83,25 @@ names(ChiP.df)[1] <- "gene"
 val.df <- do.call("rbind", list(pcHiC.df, ChiP.df)) # eQTL missing
 val.df$validation <- rep(c("pcHi-C", "ChiP-seq"), times = c(nrow(pcHiC.df), nrow(ChiP.df))) # eQTL missing
 val.df$resolution <- as.factor(val.df$resolution)
+val.df$validated <- as.numeric(val.df$validated)
+
+# add gene.ENSEMBL column
+library(biomaRt)
+
+ensembl <- useEnsembl(biomart = "genes")
+datasets <- listDatasets(ensembl)
+
+ensembl.con <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+attr <- listAttributes(ensembl.con)
+filters <- listFilters(ensembl.con)
+
+annotLookup <- getBM(
+  attributes = c("ensembl_gene_id", "external_gene_name"),
+  #filter = "external_gene_name", # If I want the ENSEMBL IDs then it is ensembl_gene_id
+  #values = val.df$gene,
+  mart = ensembl.con
+)
 
 #%%%%%%%#
 # PLOTS #
@@ -92,20 +111,27 @@ val.df$resolution <- as.factor(val.df$resolution)
 
 
 # TF recovery from ChiP-seq data
-ggplot(val.df %>% 
-         filter(validation == "ChiP-seq", validated == 1) %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
+ggplot(val.df %>%                  # validated == 1 adds more occurrences, need to figure out why
+         filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
-         group_by(resolution, setting) %>% # group the data by resolution and setting
-         summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated), .groups = "drop"), # count number of TFs recovered per each resolution and setting
        aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
   geom_line(size = 1) +
   labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw() 
 
+# works well no!
+val.df %>% 
+  filter(validation == "ChiP-seq", resolution == 3, setting == "timecourse_pearson") %>% distinct(gene, resolution, setting, .keep_all = TRUE) %>%
+  dplyr::select(validated) %>% table()
+
+ # CHECK FIRST GROUPING BY SETTING LOOK THE SUMS AND THEN BY SETTING AND RES ANS SEE IF ALLL THE RES SUMS EQUAL THE SETTING SUM
+
 ggplot(val.df %>% 
-         filter(validation == "ChiP-seq", validated == 1) %>% # want to measure frequency of recoveries
+         filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
          group_by(resolution, setting) %>% # group the data by resolution and setting
@@ -121,4 +147,9 @@ ggplot(val.df %>%
 
 
 # Peak-Gene links recovery from pcHi-C
+ggplot(val.df %>%
+         filter(validation == "pcHi-C"))
 
+# Peaks recovery from pcHi-C
+
+# Genes  recovery from pcHi-C
