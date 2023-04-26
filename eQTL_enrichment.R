@@ -25,6 +25,12 @@ corr.method <- args[2] # pearson | spearman
 # define nature of the eQTL data 
 nature <- args[3] # metabrain | hipsci | all
 
+# set eQTL data directory
+data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
+
+# set output directory
+out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
+
 # get list of eqtl files
 if (nature == "all"){
   file.names.brain <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/")
@@ -38,12 +44,6 @@ if (nature == "all"){
   # just take into account files containing the correct content
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 }
-
-# set eQTL data directory
-data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-
-# set output directory
-out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
 
 # dataframe where all eQTLs are going to be stored
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
