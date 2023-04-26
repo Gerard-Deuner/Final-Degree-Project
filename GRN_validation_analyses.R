@@ -37,7 +37,7 @@ for (file in list.files(pcHiC.dir)){
   print(file)
   df <- read.csv(paste0(pcHiC.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
-  corr.method <- str_split(file, "_") %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
+  corr.method <- str_split(file, "_", 2) %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                       dataset = dataset,
@@ -51,9 +51,9 @@ names(ChiP.df) <- c("TF", "peak", "res", "validated", "setting", "dataset", "cor
 
 for (file in list.files(ChiP.dir)){
   print(file)
-  df <- read.csv(paste0(ChiP.dir, file))
+  df <- read.csv(paste0(ChiP.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
-  corr.method <- str_split(file, "_") %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
+  corr.method <- str_split(file, "_", 2) %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                        dataset = dataset,
@@ -69,7 +69,7 @@ for (file in list.files(eQTL.dir)){
   print(file)
   df <- read.csv(paste0(eQTL.dir, file))
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
-  corr.method <- str_split(file, "_") %>% map(2) %>% as.character
+  corr.method <- str_split(file, "_", 2) %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                        dataset = dataset,
@@ -77,10 +77,48 @@ for (file in list.files(eQTL.dir)){
   eQTL.df <- rbind(eQTL.df, df)
 }
 
-# Merge all 
-val.df <- do.call("rbind", list(pcHiC.df, ChiP.df, eQTL.df))
-val.df$validation <- rep(c("pcHi-C", "ChiP-seq", "eQTL"), times = c(nrow(pcHiC.df), nrow(ChiP.df), nrow(eQTL.df)))
+## Merge all 
+# change TF column of ChiP-seq to gene so the names match 
+names(ChiP.df)[1] <- "gene"
+val.df <- do.call("rbind", list(pcHiC.df, ChiP.df)) # eQTL missing
+val.df$validation <- rep(c("pcHi-C", "ChiP-seq"), times = c(nrow(pcHiC.df), nrow(ChiP.df))) # eQTL missing
+val.df$resolution <- as.factor(val.df$resolution)
 
 #%%%%%%%#
 # PLOTS #
 #%%%%%%%#
+
+
+
+
+# TF recovery from ChiP-seq data
+ggplot(val.df %>% 
+         filter(validation == "ChiP-seq", validated == 1) %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
+         distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
+         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+         group_by(resolution, setting) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+       aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
+  geom_line(size = 1) +
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
+
+ggplot(val.df %>% 
+         filter(validation == "ChiP-seq", validated == 1) %>% # want to measure frequency of recoveries
+         distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
+         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+         group_by(resolution, setting) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+       aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid("setting") + 
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank())
+
+
+# Peak-Gene links recovery from pcHi-C
+
