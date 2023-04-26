@@ -8,6 +8,7 @@ library(qs)
 library(Seurat)
 library(ggplot2)
 library(pROC)
+library(purr)
 
 # define dataset
 dataset <- "timecourse" # timecourse | combined
@@ -21,17 +22,17 @@ corr.method <- "spearman" # pearson | spearman
 # set vector with the resolutions tested
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
 
-# dataframes to store TPs and FPs
-TPs <- data.frame(matrix(ncol = length(datasets) * length(corr.methods), nrow = length(resolutions)), row.names = resolutions)
-FPs <- data.frame(matrix(ncol = length(datasets) * length(corr.methods), nrow = length(resolutions)), row.names = resolutions)
-it <- 1
-for (dataset in datasets){
-  for (corr.method in corr.methods){
-    names(TPs)[it] <- paste(dataset, corr.method, sep = "_")
-    names(FPs)[it] <- paste(dataset, corr.method, sep = "_")
-    it <- it + 1
-  }
-}
+# # dataframes to store TPs and FPs
+# TPs <- data.frame(matrix(ncol = length(datasets) * length(corr.methods), nrow = length(resolutions)), row.names = resolutions)
+# FPs <- data.frame(matrix(ncol = length(datasets) * length(corr.methods), nrow = length(resolutions)), row.names = resolutions)
+# it <- 1
+# for (dataset in datasets){
+#   for (corr.method in corr.methods){
+#     names(TPs)[it] <- paste(dataset, corr.method, sep = "_")
+#     names(FPs)[it] <- paste(dataset, corr.method, sep = "_")
+#     it <- it + 1
+#   }
+# }
 
 # list of dfs where all links are going to be stored independent of resolution
 TP.all.list <- list() 
