@@ -25,24 +25,27 @@ corr.method <- args[2] # pearson | spearman
 # define nature of the eQTL data 
 nature <- args[3] # metabrain | hipsci | all
 
-# set eQTL data directory
-data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-
-# set output directory
-out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
 
 # get list of eqtl files
 if (nature == "all"){
+  
   file.names.brain <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/")
   file.names.brain <- grep(".txt.gz", file.names.brain, value = TRUE)
   file.names.hipsci <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/")
   file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
   file.names <- c(file.names.brain, file.names.hipsci)
-} else {
+
+  } else {
+  
+  # set eQTL data directory
+  data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
+  # set output directory
+  out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
   # list of files
   file.names <- list.files(data.dir) 
   # just take into account files containing the correct content
   file.names <- grep(".txt.gz", file.names, value = TRUE)
+
 }
 
 # dataframe where all eQTLs are going to be stored
@@ -55,7 +58,18 @@ colnames(eqtl) <- eqtl.names
 for (file in file.names){
   
   # read files one by one
-  data <- read.csv(paste0(data.dir, file), sep = "\t")
+  if (nature == "all"){
+    try(
+      data <- read.csv(paste0("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/", file), sep = "\t"),
+      silent = TRUE
+    )
+    try(
+      data <- read.csv(paste0("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/", file), sep = "\t"),
+      silent = TRUE
+    )
+  } else {
+    data <- read.csv(paste0(data.dir, file), sep = "\t")
+  }
   
   # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
   try(
