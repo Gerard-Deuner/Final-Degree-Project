@@ -13,14 +13,17 @@ library(data.table)
 library(purrr)
 library(stringr)
 
+# read arguments from command line
+args <- commandArgs(trailingOnly = TRUE)
+
 # define dataset
-dataset <- "timecourse" # timecourse | combined
+dataset <- args[1] # timecourse | combined
 
 # define correlation method
-corr.method <- "spearman" # pearson | spearman
+corr.method <- args[2] # pearson | spearman
 
 # define nature of the eQTL data 
-nature <- "hipsci" # metabrain | hipsci | all
+nature <- args[3] # metabrain | hipsci | all
 
 # get list of eqtl files
 if (nature == "all"){
@@ -32,13 +35,15 @@ if (nature == "all"){
 } else {
   # set eQTL data directory
   data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-  out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
   
   # list of files
   file.names <- list.files(data.dir) 
   # just take into account files containing the correct content
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 }
+
+# set output directory
+out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
 
 # dataframe where all eQTLs are going to be stored
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
@@ -105,11 +110,8 @@ names(all.links) <- c("gene", "peak", "resolution", "validated")
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
-# ELIMINATE LATER!
-res <- 10
-
 # iterate over GRNs
-# for (res in resolutions){
+for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
   grn <- read.csv(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"), row.names = NULL, sep = "\t")
@@ -274,7 +276,7 @@ res <- 10
       ungroup() %>%
       inner_join(filt_enhancers, by = "peak.ID") %>%
       dplyr::rename(random.gene = gene.ENSEMBL) %>%
-      select(peak.ID, random.gene, eqtl.gene, SNP, fdr) %>%
+      dplyr::select(peak.ID, random.gene, eqtl.gene, SNP, fdr) %>%
       #  select(peak.ID, random.gene, eqtl.gene, variant, fdr, peak_gene.distance) %>%
       group_by(peak.ID, random.gene) %>%
       mutate(link_validate = case_when(any(random.gene == eqtl.gene, na.rm = T) ~ TRUE,
@@ -282,7 +284,7 @@ res <- 10
   })
   
   #Number of enhancer-gene links to be tested
-  nr_links_rand <- random_links_validated_all[[1]] %>% select(peak.ID, random.gene) %>% distinct() %>% nrow()
+  nr_links_rand <- random_links_validated_all[[1]] %>% dplyr::select(peak.ID, random.gene) %>% distinct() %>% nrow()
   
   #Make figures output side by side
   #par(mar = c(4, 4, .1, .1))
@@ -311,7 +313,7 @@ res <- 10
   make_table <- function(df){
     colnames(df) <- c("peak.ID", "gene", "eqtl.gene", "SNP", "fdr", "link_validate")
     table <- df %>%
-      select(peak.ID, gene, link_validate) %>%
+      dplyr::select(peak.ID, gene, link_validate) %>%
       distinct() %>%
       group_by(link_validate) %>% 
       tally() %>%
@@ -331,7 +333,7 @@ res <- 10
   t_rand[1]
   
   # Is the percentage of GRN enhancer-gene links validated with an eQTL higher than enhancer-nearest gene links?
-  t_near %>% filter(link_validate == TRUE) %>% select(percentage) < t_grn %>% filter(link_validate == TRUE) %>% select(percentage)
+  t_near %>% filter(link_validate == TRUE) %>% dplyr::select(percentage) < t_grn %>% filter(link_validate == TRUE) %>% dplyr::select(percentage)
   
   # Is the percentage of GRN enhancer-gene links validated with an eQTL higher than enhancer-gene links with a similar distance?
   t_rand[[5]] %>% filter(link_validate == TRUE) %>% select(percentage) < t_grn %>% filter(link_validate == TRUE) %>% select(percentage)
@@ -348,12 +350,12 @@ res <- 10
   mean_or <- mean(unlist(or))
   min_or <- min(unlist(or))
   max_or <- max(unlist(or))
-  
-  filename <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/or/",  dataset, "_", corr.method, "-FDR", eQTL.FDR, "_in_", 
-                     res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
-  write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
 
-#}
+  # filename <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/or/",  dataset, "_", corr.method, "-FDR", eQTL.FDR, "_in_", 
+  #                    res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
+  # write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
+
+}
 
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
 dir.create(paste0(out.dir, dataset, "_", corr.method, "/"))
@@ -362,49 +364,4 @@ write.csv(links, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", d
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 #round(mean_or, digits = 3) (range `r round(min_or, digits = 3)`-`r round(max_or, digits = 3)`)
 
-
-# #Problem: not all enhancers are correctly matched to all genes
-# #example:
-# peaks <- unique(gr.grn_enhancers$peak.ID)
-# peaks2 <- unique(gr.grn_enhancer_windows$peak.ID)
-# setdiff(peaks, peaks2)
-# 
-# gr_enh_test <- gr.grn_enhancer_windows[gr.grn_enhancer_windows$peak.ID == "chr6:26456685-26459446" | gr.grn_enhancer_windows$peak.ID == "chr13:108341957-108344642"]
-# gr_genes_test <- gr.genes[(seqnames(gr.genes) == 6 & start(gr.genes) > 25000000 & end(gr.genes) < 28000000) |
-#                              (seqnames(gr.genes) == 13 & start(gr.genes) > 108000000 & end(gr.genes) < 108700000)]
-# #make overlap
-# gr_overlap_test <- unique(join_overlap_intersect(gr_enh_test, gr_genes_test)) #61 overlaps
-# gr.grn_enhancer_windows <- unique(join_overlap_intersect(gr.grn_enhancer_windows, gr.genes))
-# tmp <- gr.grn_enhancer_windows[gr.grn_enhancer_windows$peak.ID == "chr6:26456685-26459446" | gr.grn_enhancer_windows$peak.ID == "chr13:108341957-108344642"] #26 overlaps
-# setdiff(gr_overlap_test$ensembl_gene_id, tmp$ensembl_gene_id) #35 genes missing
-# setdiff(gr_overlap_test$peak.ID, tmp$peak.ID) #one of the 2 enhancers genes missing
-# #check: are the missing genes all linked to the missing enhancer?
-# table(seqnames(gr_overlap_test)) 
-# table(seqnames(tmp)) #yes, all linked to that one enhancer on chr. 6
-# #maybe use maxgap options?
-
-# gr.grn_enhancer_windows1 <- unique(join_overlap_intersect(gr.grn_enhancer_windows, gr.genes)) #this makes the range take the gene, order does not matter
-# gr.grn_enhancer_windows2 <- join_overlap_inner(gr.grn_enhancer_windows, gr.genes)
-# gr.grn_enhancer_windows3 <- unique(join_overlap_inner(gr.grn_enhancer_windows, gr.genes)) 
-# gr.grn_enhancer_windows4 <- unique(join_overlap_left(gr.grn_enhancer_windows, gr.genes))
-# gr.grn_enhancer_windows5 <- join_overlap_left(gr.grn_enhancer_windows, gr.genes)
-# 
-# peaks <- unique(gr.grn_enhancers$peak.ID)
-# peaks1 <- unique(gr.grn_enhancer_windows1$peak.ID)
-# peaks2 <- unique(gr.grn_enhancer_windows2$peak.ID)
-# peaks3 <- unique(gr.grn_enhancer_windows3$peak.ID)
-# peaks4 <- unique(gr.grn_enhancer_windows4$peak.ID)
-# peaks5 <- unique(gr.grn_enhancer_windows4$peak.ID)
-# 
-# genes1 <- unique(gr.grn_enhancer_windows1$ensembl_gene_id)
-# genes2 <- unique(gr.grn_enhancer_windows2$ensembl_gene_id)
-# genes3 <- unique(gr.grn_enhancer_windows3$ensembl_gene_id)
-# genes4 <- unique(gr.grn_enhancer_windows4$ensembl_gene_id)
-# genes5 <- unique(gr.grn_enhancer_windows5$ensembl_gene_id)
-# 
-# gr.grn_enhancer_windows[gr.grn_enhancer_windows$peak.ID == "chr2:38095069-38099385"]
-# gr.grn_enhancer_windows1[gr.grn_enhancer_windows1$peak.ID == "chr2:38095069-38099385"]
-# gr.grn_enhancer_windows2[gr.grn_enhancer_windows2$peak.ID == "chr2:38095069-38099385"]
-# gr.grn_enhancer_windows3[gr.grn_enhancer_windows3$peak.ID == "chr2:38095069-38099385"]
-# gr.grn_enhancer_windows4[gr.grn_enhancer_windows4$peak.ID == "chr2:38095069-38099385"]
 
