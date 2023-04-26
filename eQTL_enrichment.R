@@ -1,6 +1,6 @@
-##############
-# eQTL SETUP #
-##############
+############################
+# eQTL ENRICHMENT ANALYSIS #
+############################
 
 # load libraries
 library(dplyr)
