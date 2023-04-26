@@ -34,9 +34,10 @@ pcHiC.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(pcHiC.df) <- c("gene", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
 for (file in list.files(pcHiC.dir)){
+  print(file)
   df <- read.csv(paste0(pcHiC.dir, file), row.names = 1)
-  dataset <- str_split(file, "_") %>% map(1)
-  corr.method <- str_split(file, "_") %>% map(2)
+  dataset <- str_split(file, "_") %>% map(1) %>% as.character
+  corr.method <- str_split(file, "_") %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                       dataset = dataset,
@@ -45,13 +46,14 @@ for (file in list.files(pcHiC.dir)){
 }
 
 # get ChiP-seq data
-ChiP.df <- as.data.frame(matrix(nrow = 0, ncol = 5))
+ChiP.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(ChiP.df) <- c("TF", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
 for (file in list.files(ChiP.dir)){
+  print(file)
   df <- read.csv(paste0(ChiP.dir, file))
-  dataset <- str_split(file, "_") %>% map(1)
-  corr.method <- str_split(file, "_") %>% map(2)
+  dataset <- str_split(file, "_") %>% map(1) %>% as.character
+  corr.method <- str_split(file, "_") %>% map(2) %>% as.character %>% strsplit("[.]") %>% map(1) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                        dataset = dataset,
@@ -60,13 +62,14 @@ for (file in list.files(ChiP.dir)){
 }
 
 # get eQTL data
-eQTL.df <- as.data.frame(matrix(nrow = 0, ncol = 5))
+eQTL.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(eQTL.df) <- c("gene", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
 for (file in list.files(eQTL.dir)){
+  print(file)
   df <- read.csv(paste0(eQTL.dir, file))
-  dataset <- str_split(file, "_") %>% map(1)
-  corr.method <- str_split(file, "_") %>% map(2)
+  dataset <- str_split(file, "_") %>% map(1) %>% as.character
+  corr.method <- str_split(file, "_") %>% map(2) %>% as.character
   df <- df %>%
     tibble::add_column(setting = paste(dataset, corr.method, sep = "_"), 
                        dataset = dataset,
