@@ -8,13 +8,16 @@ library(qs)
 library(Seurat)
 library(ggplot2)
 library(pROC)
-library(purr)
+library(purrr)
+
+# read arguments from command line
+args <- commandArgs(trailingOnly = TRUE)
 
 # define dataset
-dataset <- "timecourse" # timecourse | combined
+dataset <- args[1] # timecourse | combined
 
 # define correlation method
-corr.method <- "spearman" # pearson | spearman
+corr.method <- args[2] # pearson | spearman
 
 # define GRN method
 #methods <- c("GRaNIE", "SCENIC+", "Pando")
