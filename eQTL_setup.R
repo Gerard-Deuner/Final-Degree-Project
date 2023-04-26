@@ -20,7 +20,7 @@ dataset <- "timecourse" # timecourse | combined
 corr.method <- "spearman" # pearson | spearman
 
 # define nature of the eQTL data 
-nature <- "metabrain" # metabrain | hipsci | all
+nature <- "hipsci" # metabrain | hipsci | all
 
 # get list of eqtl files
 if (nature == "all"){
@@ -30,7 +30,7 @@ if (nature == "all"){
   file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
   file.names <- c(file.names.metabrain, file.names.hipsci)
 } else {
-  # set eQTL data and output directory
+  # set eQTL data directory
   data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
   out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
   
@@ -40,9 +40,9 @@ if (nature == "all"){
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 }
 
-# dataframe where all eQTLs are going to be stores
+# dataframe where all eQTLs are going to be stored
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
-eqtl.names <- c("molecular_trait_object_id", "variant", "chromosome", "position", "p_beta")
+eqtl.names <- c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")
 colnames(eqtl) <- eqtl.names
 
 ## store the eQTL data into a single dataframe
@@ -53,11 +53,19 @@ for (file in file.names){
   data <- read.csv(paste0(data.dir, file), sep = "\t")
   
   # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
+  try(
   data <- data %>%
-    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")) # ATENTION! these names correspond to the metabrain names, put an ifelse for both natures
-  
+    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")),  # metabrain column names
+  silent = TRUE
+  )
+  try(
+  data <- data %>%
+    dplyr::select(c("gene", "alt", "chr", "snp_pos", "pvalue")),   # hipsci column names
+  silent = TRUE
+  )
+
   # rename column names (so they match with the global eQTL df's names)
-  #names(data) <- eqtl.names
+  names(data) <- eqtl.names
   
   # concatenate the file with the rest of eQTL files
   eqtl <- rbind(eqtl, data)
@@ -66,6 +74,7 @@ for (file in file.names){
   rm(data)
   
 }
+
 head(eqtl)
 # set threshold for significant eQTLs
 eQTL.FDR <- 0.3
@@ -73,7 +82,7 @@ eQTL.FDR <- 0.3
 # number of eQTLs before filtering
 print(paste("number of eQTLs before filtering", nrow(eqtl)))
 
-# reomove gene ensembl versions from the ensembl id
+# remove gene ensembl versions from the ensembl id
 eqtl$Gene <- strsplit(eqtl$Gene, "[.]") %>%
   map(1) %>%
   unlist()
@@ -89,9 +98,9 @@ gr.eqtl <- eqtl %>%
 # number of eQTLs after filtering
 print(paste("number of eQTLs before filtering", length(gr.eqtl)))
 
-# ALSO FILTER FOR GENES IN THE DATASET AND PEAKS IN THE DATASET
-
-# THE REST CAN GO TO A VALIDATION SCRIPT. THE SETUP IS DONE TILL HERE
+# creat df to store all links
+all.links <- data.frame(matrix(nrow = 0, ncol = 4))
+names(all.links) <- c("gene", "peak", "resolution", "validated")
 
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
@@ -163,7 +172,7 @@ res <- 10
                                               peak_gene.distance > 200000 & peak_gene.distance <= 250000 ~ "200-250kb",
                                               peak_gene.distance > 250000 ~ ">250kb")) %>%
     mutate(peak_gene.distance_bin = factor(peak_gene.distance_bin, levels = c("0-50kb", "50-100kb", "100-150kb", "150-200kb", "200-250kb"))) %>%
-    select(peak.ID, gene.ENSEMBL, peak_gene.distance, peak_gene.distance_bin) %>%
+    dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.distance, peak_gene.distance_bin) %>%
     distinct() %>%
     filter(peak.ID %in% filt_enhancers$peak.ID)
   
@@ -174,13 +183,22 @@ res <- 10
   grn_links_validated <- grn %>%
     left_join(filt_enhancers, by = "peak.ID") %>%
     dplyr::rename(grn.gene = gene.ENSEMBL) %>%
-    select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
+    dplyr::select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
     group_by(peak.ID, grn.gene) %>%
-    mutate(link_validate = case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, 
-                                     TRUE ~ FALSE))
+    mutate(link_validate = ifelse(grn.gene == eqtl.gene, TRUE, FALSE))  # case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, TRUE ~ FALSE))
   
   # show the GRN links that can be tested and whether they are validated or not
   data.table(grn_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
+  
+  # format validated links to be stored
+  links <- grn_links_validated %>%
+    tibble::add_column(resolution = res) %>% 
+    dplyr::select(gene = grn.gene, peak = peak.ID, resolution, validated = link_validate)
+  
+  # add links data for this res to the global links df
+  all.links <- rbind(all.links, links)  
+  
+  # Background validation #
   
   # Validate enhancer-gene links based on the closest gene
   # As a background, produce enhancer-gene links for the same enhancers by selecting the closest gene to the peak location. 
@@ -203,27 +221,20 @@ res <- 10
   nearest_links_validated <- join_nearest(gr.filt_enhancers, gr.genes) %>%
     as.data.frame() %>%
     dplyr::rename(nearest.gene = gene.ENSEMBL) %>%
-    select(peak.ID, nearest.gene, eqtl.gene, SNP, fdr) %>%
+    dplyr::select(peak.ID, nearest.gene, eqtl.gene, SNP, fdr) %>%
     group_by(peak.ID, nearest.gene) %>%
     mutate(link_validate = case_when(any(nearest.gene == eqtl.gene, na.rm = T) ~ TRUE,
                                      TRUE ~ FALSE))
   
   # Number of enhancer-gene links to be tested
-  nr_links <- nearest_links_validated %>% select(peak.ID, nearest.gene) %>% distinct() %>% nrow()
+  nr_links <- nearest_links_validated %>% dplyr::select(peak.ID, nearest.gene) %>% distinct() %>% nrow()
   
   # Number of enhancer-gene links based on nearest gene:
   nr_links
   
   # show the nearest gene links that can be tested and whether they are validated or not
   data.table(nearest_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
-  
-  # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
-  dir.create(paste0(out.dir, dataset, "_", corr.method, "/"))
-  write.csv(nearest_links_validated, paste0(out.dir, dataset, "_", corr.method, "/", "Res.", res, "_eQTL_links.tsv"))
-  
-  #################################
-  # SETUP AND GRN VALIDATION DONE #
-  #################################
+
   
   # Validate enhancer-gene links based on the randomly sampled distance-matched genes
   # As a background, produce enhancer-gene links for the same enhancers by selecting a gene with the same distance to the peak location.
@@ -344,6 +355,10 @@ res <- 10
 
 #}
 
+# write file (and create a dataset and corr.method -specific folder if it does not exist yet)
+dir.create(paste0(out.dir, dataset, "_", corr.method, "/"))
+write.csv(links, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", dataset, "_", corr.method, "_eQTL_links.tsv"))
+  
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 #round(mean_or, digits = 3) (range `r round(min_or, digits = 3)`-`r round(max_or, digits = 3)`)
 
