@@ -33,14 +33,14 @@ if (nature == "all"){
   file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
   file.names <- c(file.names.brain, file.names.hipsci)
 } else {
-  # set eQTL data directory
-  data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
-  
   # list of files
   file.names <- list.files(data.dir) 
   # just take into account files containing the correct content
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 }
+
+# set eQTL data directory
+data.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/inputdata/")
 
 # set output directory
 out.dir <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/")
