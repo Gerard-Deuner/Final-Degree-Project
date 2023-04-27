@@ -18,6 +18,7 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 library(stringr)
+library(ggpubr)
 
 # define datasets
 datasets <- c("timecourse", "combined")
@@ -107,8 +108,8 @@ annotLookup <- getBM(
 # PLOTS #
 #%%%%%%%#
 
-
-
+# define colours for the 4 nomicro settings
+colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
 # TF recovery from ChiP-seq data
 ggplot(val.df %>%                  # validated == 1 adds more occurrences, need to figure out why
@@ -147,9 +148,75 @@ ggplot(val.df %>%
 
 
 # Peak-Gene links recovery from pcHi-C
-ggplot(val.df %>%
-         filter(validation == "pcHi-C"))
+a <- ggplot(val.df %>%                 
+         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
+         #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
+         #as.data.frame() %>%
+         #separate(setting, c("dataset", "corr.method", "micro"), sep = "_", remove = FALSE), # create corresponding dataset and corr.method columns to be used in aes()
+       aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
+  scale_color_manual(values = colours) +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
+
+b <- ggplot(val.df %>%                 
+         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
+       aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid("setting") +
+  labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Recovery distribution across resulutions") +
+  scale_fill_manual(values = colours) +  
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank())
+  
+c <- ggplot(val.df %>%                 
+         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+         mutate(non_recovered = GRN_links - recovered) %>%
+         pivot_longer(c(recovered, non_recovered), names_to = "links", values_to = "value"),
+         aes(resolution, y = value , group = setting, fill = links)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid("setting") +
+  labs(y = "# Peak-Gene Links", x = "Cluster Resolutions", title = "Recovered vs. Non-recovered Links") +
+  scale_fill_manual(values = c("grey", "#FFCC00")) +  
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        strip.text.y = element_blank(),
+        strip.background = element_rect(fill = colours))
+
+d <- ggplot(val.df %>%                 
+         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+         mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
+       aes(resolution, y = ratio , group = setting, col = setting)) + 
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "# Peak-Gene Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
+  scale_color_manual(values = colours) +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
+
+pg <- ggarrange(a, b, c, d, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+pg
+ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery.pdf", pg)
 
 # Peaks recovery from pcHi-C
 
 # Genes  recovery from pcHi-C
+
+
+################################
+# GENERAL GRN STATISTICS PLOTS #
+################################
