@@ -260,8 +260,8 @@ p1 <- ggplot(all.grn.links %>%
        aes(x = resolution, y = TFcount, group = resolution, fill = resolution)) + 
   geom_bar(stat = "identity", col = "black", fill = coul) + 
   labs(x = "Resolution", y = "TF count", title = "# TFs per resolution") + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  theme_bw()
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
 
 # number of genes
 p2 <- ggplot(all.grn.links %>%
@@ -271,8 +271,8 @@ p2 <- ggplot(all.grn.links %>%
        aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) + 
   geom_bar(stat = "identity", col = "black", fill = coul) + 
   labs(x = "Resolution", y = "Gene count", title = "# Genes per resolution") + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  theme_bw()
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
 
 # number of peaks
 p3 <- ggplot(all.grn.links %>%
@@ -282,8 +282,8 @@ p3 <- ggplot(all.grn.links %>%
        aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) + 
   geom_bar(stat = "identity", col = "black", fill = coul) + 
   labs(x = "Resolution", y = "Peak count", title = "# Peaks per resolution") + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  theme_bw()
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
 
 # number total links
 p4 <- ggplot(all.grn.links %>%
@@ -293,9 +293,13 @@ p4 <- ggplot(all.grn.links %>%
        aes(x = resolution, y = n, group = resolution, fill = resolution)) + 
   geom_bar(stat = "identity", col = "black", fill = coul) + 
   labs(x = "Resolution", y = "Link count", title = "# Links per resolution") + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  theme_bw()
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+  
 
+pgrn <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+pgrn
+ggsave("/g/scb/zaugg/deuner/valdata/figures/GRNstats_comb_sp_nm.png", pgrn, device = "png")
 
 # genes per regulon distribution
 p5 <- ggplot(all.grn.links %>%
@@ -304,20 +308,49 @@ p5 <- ggplot(all.grn.links %>%
          summarise(GENEcount = n_distinct(gene.ENSEMBL)),
          #filter(n < 200), # remove outliers
        aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) +
-  geom_boxplot()
+  geom_boxplot() +
+  labs(x = "Resolution", y = "# Genes per regulon", title = "Genes per Regulon Distribution") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+
+p6 <- ggplot(all.grn.links %>%
+               dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+               group_by(resolution,TF.ENSEMBL) %>%
+               summarise(GENEcount = n_distinct(gene.ENSEMBL)) %>%
+               filter(GENEcount < 200), # remove outliers
+             aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) +
+  geom_boxplot() + 
+  labs(x = "Resolution", y = "# Genes per regulon", title = "Genes per Regulon Distribution") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
 
 # regions per regulon distribution
-p6 <- ggplot(all.grn.links %>%
+p7 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution,TF.ENSEMBL) %>%
          summarise(PEAKcount = n_distinct(peak.ID)),
        #filter(n < 200), # remove outliers
        aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) +
-  geom_boxplot()
+  geom_boxplot() + 
+  labs(x = "Resolution", y = "# Peaks per regulon", title = "Peaks per Regulon Distribution") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
 
-pgrn <- ggarrange(p1, p2, p3, p4, p5, p6, ncol = 3, nrow = 3, common.legend = TRUE, labels = "AUTO")
-pgrn
-ggsave("/g/scb/zaugg/deuner/valdata/figures/GRNstats_comb_sp_nm.pdf", pg)
+
+p8 <- ggplot(all.grn.links %>%
+               dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+               group_by(resolution,TF.ENSEMBL) %>%
+               summarise(PEAKcount = n_distinct(peak.ID)) %>%
+             filter(PEAKcount < 200), # remove outliers
+             aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) +
+  geom_boxplot() + 
+  labs(x = "Resolution", y = "# Peaks per regulon", title = "Peaks per Regulon Distribution") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+
+prgn <- ggarrange(p5, p6, p7, p8, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+prgn
+ggsave("/g/scb/zaugg/deuner/valdata/figures/RegulonsStats_comb_sp_nm.png", prgn, device = "png")
 
 
 egrn <- qread("/g/scb/zaugg/deuner/GRaNIE/outputdata/combined_spearman_nomciro_Res_0.25/output_pseudobulk_wsnn_res.0.25_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
