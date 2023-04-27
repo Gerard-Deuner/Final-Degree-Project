@@ -229,9 +229,10 @@ resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
 
 # read GRNs
 i <- 1
-for (file in list.files(path)){
-  print(file)
-  grn <- read.csv(paste0(path, file, "/connections_TFPeak0.2_peakGene0.1.tsv.gz"), row.names = NULL, sep =  "\t")
+for (res in resolutions){
+  print(res)
+  grn <- qread(paste0(path, "output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+  grn <- grn@connections$all.filtered$`0`
   grn$resolution <- rep(resolutions[i], nrow(grn))
   if (i == 1) {
     all.grn.links <- grn
@@ -243,7 +244,7 @@ for (file in list.files(path)){
 } 
 
 # set colours
-coul <- brewer.pal(4, "PuOr") 
+coul <- brewer.pal(4, "YlOrRd") 
 
 # Add more colors to this palette :
 coul <- colorRampPalette(coul)(19)
@@ -252,33 +253,73 @@ coul <- colorRampPalette(coul)(19)
 all.grn.links$resolution <- as.factor(all.grn.links$resolution)
 
 # number of TFs (unique)
-ggplot(all.grn.links %>%
+p1 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution) %>%
          summarise(TFcount = n_distinct(TF.ENSEMBL)),
-       aes(x = resolution, y = TFcount, group = resolution), fill = "#ff7f0e", col = "black" ) + 
-  geom_bar(stat = "identity") + 
+       aes(x = resolution, y = TFcount, group = resolution, fill = resolution)) + 
+  geom_bar(stat = "identity", col = "black", fill = coul) + 
   labs(x = "Resolution", y = "TF count", title = "# TFs per resolution") + 
-  scale_fill_viridis_c(option = "heat") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw()
 
 # number of genes
-
+p2 <- ggplot(all.grn.links %>%
+         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+         group_by(resolution) %>%
+         summarise(GENEcount = n_distinct(gene.ENSEMBL)),
+       aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) + 
+  geom_bar(stat = "identity", col = "black", fill = coul) + 
+  labs(x = "Resolution", y = "Gene count", title = "# Genes per resolution") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw()
 
 # number of peaks
-
+p3 <- ggplot(all.grn.links %>%
+         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+         group_by(resolution) %>%
+         summarise(PEAKcount = n_distinct(peak.ID)),
+       aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) + 
+  geom_bar(stat = "identity", col = "black", fill = coul) + 
+  labs(x = "Resolution", y = "Peak count", title = "# Peaks per resolution") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw()
 
 # number total links
+p4 <- ggplot(all.grn.links %>%
+         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+         group_by(resolution) %>%
+         tally(),
+       aes(x = resolution, y = n, group = resolution, fill = resolution)) + 
+  geom_bar(stat = "identity", col = "black", fill = coul) + 
+  labs(x = "Resolution", y = "Link count", title = "# Links per resolution") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw()
 
 
 # genes per regulon distribution
-ggplot(grn %>%
-         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL) %>% # select important columms
-         group_by(TF.name) %>%
-         tally(),
-       aes())
+p5 <- ggplot(all.grn.links %>%
+         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+         group_by(resolution,TF.ENSEMBL) %>%
+         summarise(GENEcount = n_distinct(gene.ENSEMBL)),
+         #filter(n < 200), # remove outliers
+       aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) +
+  geom_boxplot()
 
 # regions per regulon distribution
+p6 <- ggplot(all.grn.links %>%
+         dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
+         group_by(resolution,TF.ENSEMBL) %>%
+         summarise(PEAKcount = n_distinct(peak.ID)),
+       #filter(n < 200), # remove outliers
+       aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) +
+  geom_boxplot()
 
+pgrn <- ggarrange(p1, p2, p3, p4, p5, p6, ncol = 3, nrow = 3, common.legend = TRUE, labels = "AUTO")
+pgrn
+ggsave("/g/scb/zaugg/deuner/valdata/figures/GRNstats_comb_sp_nm.pdf", pg)
+
+
+egrn <- qread("/g/scb/zaugg/deuner/GRaNIE/outputdata/combined_spearman_nomciro_Res_0.25/output_pseudobulk_wsnn_res.0.25_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
+egrn@connections$all.filtered
 
