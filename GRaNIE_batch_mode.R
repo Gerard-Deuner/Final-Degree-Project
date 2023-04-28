@@ -16,7 +16,7 @@ args <- commandArgs(trailingOnly = TRUE)
 dataset <- args[1] # timecourse | combined
 
 # choose correlation method
-correlation.method <- args[2] # pearson | spearman
+corr.method <- args[2] # pearson | spearman
 
 # Set up source of helper functions 
 source("/g/scb/zaugg/deuner/GRaNIE/code/GRaNIE_helper_functions.R")
@@ -34,11 +34,11 @@ TFBS_folder = NULL
 file_RNA_features = paste0("/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_", genomeAssembly, ".tsv.gz")
 
 # Load the seurat object
-s.obj <- qread(paste0(path,"/tmp/", dataset, ".pp.seuratObject.qs"))
+s.obj <- qread(paste0(path,"/tmp/", dataset, ".pp.nomicro.seuratObject.qs"))
 
 # Path to the output directory
-seurat_outputFolder = paste0(path,"/outputdata/batch_mode/", dataset,"_batch_mode_", correlation.method)
-
+seurat_outputFolder = paste0(path,"/outputdata/batch_mode/", dataset,"_batch_mode_", corr.method, "_nomicro")
+dir.create(paste0(path,"/outputdata/batch_mode/", dataset,"_batch_mode_", corr.method, "_nomicro"))
 
 # Prepare data
 s.obj = prepareSeuratData_GRaNIE(s.obj, outputDir = seurat_outputFolder, pseudobulk_source = "cluster",
@@ -59,7 +59,7 @@ runGRaNIE_batchMode(datasetName = paste(dataset, "Dataset", sep = "_"),
                     nCores = 8,
                     TF_peak.fdr.threshold = 0.2,
                     peak_gene.fdr.threshold = 0.1,
-                    runNetworkAnalyses = FALSE,
+                    runNetworkAnalyses = TRUE,
                     forceRerun = TRUE,
-                    correlation.method = correlation.method)
+                    correlation.method = corr.method)
 
