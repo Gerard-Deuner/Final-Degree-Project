@@ -466,7 +466,7 @@ runGRaNIE_batchMode <- function (datasetName,
                                  peak_gene.fdr.threshold = 0.1,
                                  runNetworkAnalyses = FALSE, 
                                  forceRerun = TRUE,
-                                 correlation.method) {
+                                 corr.method) {
   
   
   library(tidyverse)
@@ -674,14 +674,14 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
                                  gene.types = c("protein_coding"),
                                  allowMissingTFs = FALSE, allowMissingGenes = FALSE,
                                  peak_gene.r_range = c(0,1))
-  # run analysis on FDRs
-  GRN = generateStatsSummary(GRN, TF_peak.fdr = c(0.05, 0.1, 0.2, 0.25, 0.3), TF_peak.connectionTypes = "all",
-                             peak_gene.fdr = c(0.1, 0.2, 0.3), peak_gene.r_range = c(0, 1), allowMissingGenes = c(FALSE,TRUE), 
-                             allowMissingTFs = c(FALSE), gene.types = c("protein_coding", "lincRNA"),
-                             forceRerun = TRUE)
-  
-  GRN = plot_stats_connectionSummary(GRN, type = "heatmap", plotAsPDF = TRUE, pages = 3)
-  GRN = plot_stats_connectionSummary(GRN, type = "boxplot", plotAsPDF = TRUE, pages = 1)
+  # # run analysis on FDRs
+  # GRN = generateStatsSummary(GRN, TF_peak.fdr = c(0.05, 0.1, 0.2, 0.25, 0.3), TF_peak.connectionTypes = "all",
+  #                            peak_gene.fdr = c(0.1, 0.2, 0.3), peak_gene.r_range = c(0, 1), allowMissingGenes = c(FALSE,TRUE), 
+  #                            allowMissingTFs = c(FALSE), gene.types = c("protein_coding", "lincRNA"),
+  #                            forceRerun = TRUE)
+  # 
+  # GRN = plot_stats_connectionSummary(GRN, type = "heatmap", plotAsPDF = TRUE, pages = 3)
+  # GRN = plot_stats_connectionSummary(GRN, type = "boxplot", plotAsPDF = TRUE, pages = 1)
   
   file_connections = paste0(dir_output, "/connections_TFPeak", TF_peak.fdr.threshold, "_peakGene", peak_gene.fdr.threshold, ".tsv.gz")
   
