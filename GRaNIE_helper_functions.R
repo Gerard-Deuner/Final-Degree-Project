@@ -695,7 +695,11 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   write_tsv(connections.df, file_connections)
   
   if (runNetworkAnalyses) {
+  
+    if (nrow(GRN@connections$all.filtered$`0`) != 0) { # avoid error if GRN is empty
     GRN = performAllNetworkAnalyses(GRN)
+    }
+  
   }
   
   
