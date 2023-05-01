@@ -697,7 +697,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   if (runNetworkAnalyses) {
   
     if (nrow(GRN@connections$all.filtered$`0`) != 0) { # avoid error if GRN is empty
-    GRN = performAllNetworkAnalyses(GRN)
+    GRN = performAllNetworkAnalyses_custom(GRN)
     }
   
   }
@@ -706,6 +706,63 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   # GRN = visualizeGRN(GRN, plotAsPDF = FALSE)
   
   qs::qsave(GRN, file_GRN)
+  
+  GRN
+  
+}
+
+# Perform All Network Analyses custom function (exclude comunities analyses as they are very time consuming)
+performAllNetworkAnalyses_custom <- function(GRN, ontology = c("GO_BP", "GO_MF"), 
+                                      algorithm = "weight01", statistic = "fisher",
+                                      background = "neighborhood", 
+                                      clustering = "louvain",
+                                      communities = NULL, selection = "byRank",
+                                      topnGenes = 20, topnTFs = 20,
+                                      maxWidth_nchar_plot = 50,
+                                      display_pAdj = FALSE,
+                                      outputFolder = NULL,
+                                      forceRerun = TRUE) {
+  
+  library(tidyverse)
+  library(qs)
+  library(GRaNIE)
+  library(futile.logger)
+  
+  start = Sys.time()
+  
+  checkmate::assertClass(GRN, "GRN")
+  
+  GRN = build_eGRN_graph(GRN, model_TF_gene_nodes_separately = FALSE, allowLoops = FALSE, directed = FALSE, removeMultiple = FALSE)
+  
+  GRN = plotGeneralGraphStats(GRN, outputFolder = outputFolder, forceRerun = forceRerun) 
+  
+  GRN = calculateGeneralEnrichment(GRN, ontology = ontology, algorithm = algorithm, statistic = statistic, 
+                                   background = background, forceRerun = forceRerun)
+  GRN = plotGeneralEnrichment(GRN, outputFolder = outputFolder, display_pAdj = display_pAdj, 
+                              maxWidth_nchar_plot = maxWidth_nchar_plot, forceRerun = forceRerun) 
+  
+  
+  # GRN = calculateCommunitiesStats(GRN, clustering = clustering, forceRerun = forceRerun)
+  # 
+  # GRN = plotCommunitiesStats(GRN, outputFolder = outputFolder, selection = selection, communities = communities, 
+  #                            forceRerun = forceRerun, topnGenes = topnGenes, topnTFs = topnTFs)
+  # 
+  # GRN = calculateCommunitiesEnrichment(GRN, ontology = ontology, algorithm = algorithm, statistic = statistic, 
+  #                                      selection = selection, communities = communities,
+  #                                      background = background, forceRerun = forceRerun)
+  # 
+  # GRN = plotCommunitiesEnrichment(GRN, outputFolder = outputFolder, 
+  #                                 selection = selection, communities = communities,
+  #                                 display_pAdj = display_pAdj,  maxWidth_nchar_plot = maxWidth_nchar_plot,
+  #                                 forceRerun = forceRerun)
+  
+  GRN = calculateTFEnrichment(GRN, ontology = ontology, algorithm = algorithm, statistic = statistic,
+                              background = background, pAdjustMethod = "BH",
+                              forceRerun = forceRerun)
+  
+  GRN = plotTFEnrichment(GRN, display_pAdj = display_pAdj, outputFolder = outputFolder, maxWidth_nchar_plot = maxWidth_nchar_plot,
+                         forceRerun = forceRerun)
+  
   
   GRN
   
