@@ -9,6 +9,7 @@ library(Matrix)
 library(dplyr)
 library(tidyr)
 library(GRaNIE)
+library(Signac)
 
 # #Set directory and cell type
 # dir <- "/g/scb/zaugg/claringb/scz_CRISPR_screen/NGN2_NPC/scifi-RNA/output/processing_by_Mikael_Umut/"
@@ -49,11 +50,19 @@ seur <- qread("/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
 
 DefaultAssay(seur) <- "RNA"
 
-colSums(seur@assays$RNA@counts) %>% table #94464
+# check if there are empty cells
 seur@meta.data$nCount_RNA %>% is.na %>% table
+seur@meta.data$nCount_ATAC %>% is.na %>% table
 
-seur$isna <- is.na(seur@meta.data$nCount_RNA)
-seur <- subset(seur, subset = isna == FALSE)
+# Filter out empty cells
+seur$isna.rna <- is.na(seur@meta.data$nCount_RNA)
+seur <- subset(seur, subset = isna.rna == FALSE)
+seur$isna.atac <- is.na(seur@meta.data$nCount_ATAC)
+seur <- subset(seur, subset = isna.atac == FALSE)
+
+# check if empty cells were removed correctly
+seur@meta.data$nCount_RNA %>% is.na %>% table
+seur@meta.data$nCount_ATAC %>% is.na %>% table
 
 ## Run scGRaNIE
 # Set up source of helper functions
