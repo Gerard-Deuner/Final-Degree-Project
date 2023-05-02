@@ -84,9 +84,10 @@ FP.vec <- c()
 TP.all <- data.frame()
 
 # df where all the GRN links will be stored no matter if they are validated or not
-GRN.links.all <- as.data.frame(matrix(nrow = 0, ncol = 4))
-names(GRN.links.all) <- c("gene", "peak", "res", "bc")
+GRN.links.all <- as.data.frame(matrix(nrow = 0, ncol = 5))
+names(GRN.links.all) <- c("gene", "peak", "res", "bc", "gene.ENSEMBL")
 
+# iterate over GRNs and validate their links
 for (res in resolutions){
   # set index
   j <- j + 1
@@ -96,21 +97,22 @@ for (res in resolutions){
   # read GRN object
   GRN <- qread(paste0(GRN.dir, "GRN.qs"))
   
-  # get gene-peak connections from GRN
-  #GRN_links <- GRN@connections$all.filtered$`0` %>% as.data.frame() %>% dplyr::select(peak.ID, gene.name, peak_gene.r, peak_gene.p_raw)
+  # get gene-peak connections from GRN                                                        # gene name if all links
+  #GRN.links <- GRN@connections$all.filtered$`0` %>% as.data.frame() %>% dplyr::select(peak.ID, gene.name, peak_gene.r, peak_gene.p_raw)
   GRN.links <- GRN@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% as.data.frame() %>% dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.r, peak_gene.p_raw)
   
   # adapt peaks format to links format
   form.peak <- rep("", nrow(GRN.links))
   for (i in 1:nrow(GRN.links)){
-    peak <- as.character(GRN.links$peak.ID[i])
+    peak <- as.character(GRN.links$peak.ID[i])  #peak.ID if consider all links
     split.peak <- strsplit(peak, split = ":")
     new.peak <- paste(split.peak[[1]][1], split.peak[[1]][2], sep = "-")
     form.peak[i] <- new.peak
   }
   GRN.links$id <- seq(1:nrow(GRN.links))
-  GRN.links$peak.ID <- form.peak 
+  GRN.links$peak.ID <- form.peak  
   names(GRN.links)[1:2] <- c("peak", "gene.ENSEMBL")
+  
   
   # Binary classification
   # get rows that match in GRN links and HiC links by gene name and peak id
@@ -126,11 +128,11 @@ for (res in resolutions){
   # add resolution information to the GRN.links df
   GRN.links$resolution <- rep(resolutions[j], nrow(GRN.links))
   # get gene names 
-  GRN.links <- GRN.links %>%
+  GRN.links <- GRN.links %>% # UNCOMMENT IF USING ALL LINKS
     inner_join(annotLookup, by = "gene.ENSEMBL", multiple = "all") 
   
   # store GRN links data in df for all links
-  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(gene, peak, resolution, bc))
+  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(gene, peak, resolution, bc, gene.ENSEMBL)) # GENE if all links
 
   # Compute ROC curve
   par(pty = "s")
