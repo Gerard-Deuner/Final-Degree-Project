@@ -51,8 +51,6 @@ seqlevelsStyle(annotation) <- 'UCSC'
 peakRanges <- qread("/g/scb/zaugg/marttine/dariaMultiome/peakRanges.timecourse.qs")
 Annotation(seurat_object[["ATAC"]]) <- peakRanges
 
-# Select variable features
-seurat_object <- Seurat::FindVariableFeatures(seurat_object, assay='RNA', nfeatures = 100)
 
 # Initiate GRN object and select candidate regions
 seurat_object <- initiate_grn(seurat_object, 
@@ -86,10 +84,12 @@ seurat_object@grn@regions@motifs@data <- new_motif_data
 seurat_object@grn@regions@peaks <- new_regions_peaks
 seurat_object@grn@regions@ranges <- new_ranges_data
 
+# Select variable features
+seurat_object <- Seurat::FindVariableFeatures(seurat_object, assay='RNA', nfeatures = 100)
+
 # Infer gene regulatory network
 seurat_object <- infer_grn(seurat_object,
-                           method = 'glm',
-                           parallel = TRUE,
+                           parallel = F,
                            verbose = 2,
                            genes = VariableFeatures(seurat_object))
 
@@ -97,10 +97,10 @@ seurat_object <- infer_grn(seurat_object,
 coef(seurat_object)
 
 # Find gene and regulatory modules 
-test_srt <- find_modules(test_srt)
+seurat_object <- find_modules(seurat_object)
 
 # Print modules
-modules <- NetworkModules(test_srt)
+modules <- NetworkModules(seurat_object)
 
 # Save Network output
 write.csv(modules@meta, paste0("/g/scb/zaugg/deuner/Pando/outputdata/", dataset, ".GRN.tsv"))
