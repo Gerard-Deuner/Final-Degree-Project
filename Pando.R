@@ -30,13 +30,13 @@ annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
 seqlevelsStyle(annotation) <- 'UCSC'
  
 #seurat_object <- CreateSeuratObject(counts = rna.s.obj@assays$RNA@counts ,assay = 'RNA')
-atac = CreateChromatinAssay(
-  counts = counts$Peaks,
-  sep = c(':', '-'),
-  fragments = fragpath,
-  annotation = annotation
-)
-seurat_object[['peaks']] = atac
+# atac = CreateChromatinAssay(
+#   counts = seurat_object@assays$ATAC@counts,
+#   sep = c(':', '-'),
+#   fragments = fragpath,
+#   annotation = annotation
+# )
+# seurat_object[['peaks']] = atac
 
 # Get motif data
 data(motifs)
@@ -52,7 +52,7 @@ peakRanges <- qread("/g/scb/zaugg/marttine/dariaMultiome/peakRanges.timecourse.q
 Annotation(seurat_object[["ATAC"]]) <- peakRanges
 
 # Select variable features
-seurat_object <- Seurat::FindVariableFeatures(seurat_object, assay='RNA')
+seurat_object <- Seurat::FindVariableFeatures(seurat_object, assay='RNA', nfeatures = 100)
 
 # Initiate GRN object and select candidate regions
 seurat_object <- initiate_grn(seurat_object, 
@@ -90,7 +90,8 @@ seurat_object@grn@regions@ranges <- new_ranges_data
 seurat_object <- infer_grn(seurat_object,
                            method = 'glm',
                            parallel = TRUE,
-                           verbose = 2)
+                           verbose = 2,
+                           genes = VariableFeatures(seurat_object))
 
 # Print inferred coefficients
 coef(seurat_object)
