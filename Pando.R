@@ -13,15 +13,30 @@ library(Signac)
 library(dplyr)
 library(tidyr)
 library(purrr)
+library(EnsDb.Hsapiens.v86)
 
 # Define dataset  
 dataset <- "timecourse" # timecourse | combined
 
 # Set data directory
-data.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/tmp/", dataset, ".pp.seuratObject.qs")
+data.dir <- paste0("/g/scb/zaugg/deuner/GRaNIE/tmp/", dataset, ".pp.nomicro.seuratObject.qs")
 
 # Load seurat object
 seurat_object <- qread(data.dir)
+
+# Get chromatin accessibility data
+fragpath <- '/g/scb/zaugg/deuner/SCENIC+/inputdata/timecourse_fragments.tsv'
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevelsStyle(annotation) <- 'UCSC'
+ 
+#seurat_object <- CreateSeuratObject(counts = rna.s.obj@assays$RNA@counts ,assay = 'RNA')
+atac = CreateChromatinAssay(
+  counts = counts$Peaks,
+  sep = c(':', '-'),
+  fragments = fragpath,
+  annotation = annotation
+)
+seurat_object[['peaks']] = atac
 
 # Get motif data
 data(motifs)
@@ -32,6 +47,7 @@ genome(seurat_object) <- "hg38"
 
 # Add annotation
 ## get peak ranges (timecourse)
+seqlevelsStyle(annotation) <- 'UCSC'
 peakRanges <- qread("/g/scb/zaugg/marttine/dariaMultiome/peakRanges.timecourse.qs")
 Annotation(seurat_object[["ATAC"]]) <- peakRanges
 
@@ -72,9 +88,9 @@ seurat_object@grn@regions@ranges <- new_ranges_data
 
 # Infer gene regulatory network
 seurat_object <- infer_grn(seurat_object,
-                           peak_to_gene_method = 'Signac',
                            method = 'glm',
-                           parallel = TRUE)
+                           parallel = TRUE,
+                           verbose = 2)
 
 # Print inferred coefficients
 coef(seurat_object)
@@ -87,3 +103,27 @@ modules <- NetworkModules(test_srt)
 
 # Save Network output
 write.csv(modules@meta, paste0("/g/scb/zaugg/deuner/Pando/outputdata/", dataset, ".GRN.tsv"))
+
+# counts <- Read10X_h5('../data/pbmc/pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5')
+# counts$Peaks=counts$Peaks[startsWith(rownames(counts$Peaks),'chr'),]
+# 
+# fragpath <- '../data/pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz'
+# annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+# seqlevelsStyle(annotation) <- 'UCSC'
+# 
+# pbmc <- CreateSeuratObject(counts = counts$`Gene Expression`,assay = 'RNA')
+# atac = CreateChromatinAssay(
+#   counts = counts$Peaks,
+#   sep = c(':', '-'),
+#   fragments = fragpath,
+#   annotation = annotation
+# )
+# pbmc[['peaks']] = atac
+# 
+# pbmc_grn = initiate_grn(pbmc)
+# pbmc_grn = find_motifs(pbmc_grn, pfm=motifs, genome=BSgenome.Hsapiens.UCSC.hg38)
+# 
+# pbmc_grn <- FindVariableFeatures(pbmc_grn, nfeatures=100)
+# 
+# pbmc_grn = inferd_grn(pbmc_grn, genes=VariableFeatures(pbmc_grn), parallel=F, verbose = 2)
+# pbmc_grn = find_modules(pbmc_grn)
