@@ -6,43 +6,54 @@
 library(qs)
 library(Seurat)
 library(Matrix)
+library(dplyr)
+library(tidyr)
+library(GRaNIE)
 
-#Set directory and cell type
-dir <- "/g/scb/zaugg/claringb/scz_CRISPR_screen/NGN2_NPC/scifi-RNA/output/processing_by_Mikael_Umut/"
-
-## Combine seurat objects
-#Read Seurat objects
-npc <- qread(paste0(dir, "/6.Aligned/NPC/NPCseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
-neur <- qread(paste0(dir, "/6.Aligned/Neuron/neuronseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
-
-#Clear metadata for a cleaner output
-columns.to.remove <- c("leidenSub0.4", "leidenSub0.6", "leidenSub0.8", "leidenSub1.0",
-                       "leidenSub1.4", "leidenSub1.6", "umap1", "umap2")
-
-for(i in columns.to.remove) {
-  npc[[i]] <- NULL
-  neur[[i]] <- NULL
-}
-
-#Combine into one seurat object
-seur.rna <- merge(npc, y = neur, add.cell.ids = c("NPC", "Neuron"))
-
-#Add ATAC data
-peaks <- readMM("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/atac.counts.mtx.gz")
-rownames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/peaks.atac.csv.gz")$x
-colnames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/cell.atac.csv.gz")$id
-
-## create a seurat object
-seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC')
-
-#Combine rna and atac seurat object
-seur <- merge(seur.rna, seur.atac, merge.data = TRUE, ) # bad alloc - run on cluster
-
-#Save seurat object
-qsave(seur, "/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
+# #Set directory and cell type
+# dir <- "/g/scb/zaugg/claringb/scz_CRISPR_screen/NGN2_NPC/scifi-RNA/output/processing_by_Mikael_Umut/"
+# 
+# ## Combine seurat objects
+# #Read Seurat objects
+# npc <- qread(paste0(dir, "/6.Aligned/NPC/NPCseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
+# neur <- qread(paste0(dir, "/6.Aligned/Neuron/neuronseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
+# 
+# #Clear metadata for a cleaner output
+# columns.to.remove <- c("leidenSub0.4", "leidenSub0.6", "leidenSub0.8", "leidenSub1.0",
+#                        "leidenSub1.4", "leidenSub1.6", "umap1", "umap2")
+# 
+# for(i in columns.to.remove) {
+#   npc[[i]] <- NULL
+#   neur[[i]] <- NULL
+# }
+# 
+# #Combine into one seurat object
+# seur.rna <- merge(npc, y = neur, add.cell.ids = c("NPC", "Neuron"))
+# 
+# #Add ATAC data
+# peaks <- readMM("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/atac.counts.mtx.gz")
+# rownames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/peaks.atac.csv.gz")$x
+# colnames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/cell.atac.csv.gz")$id
+# 
+# ## create a seurat object
+# seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC')
+# 
+# #Combine rna and atac seurat object
+# seur <- merge(seur.rna, seur.atac, merge.data = TRUE) # bad alloc - run on cluster
+# 
+# #Save seurat object
+# qsave(seur, "/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
 
 #Read seurat object
 seur <- qread("/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
+
+DefaultAssay(seur) <- "RNA"
+
+colSums(seur@assays$RNA@counts) %>% table #94464
+seur@meta.data$nCount_RNA %>% is.na %>% table
+
+seur$isna <- is.na(seur@meta.data$nCount_RNA)
+seur <- subset(seur, subset = isna == FALSE)
 
 ## Run scGRaNIE
 # Set up source of helper functions
@@ -60,15 +71,8 @@ TFBS_folder = NULL
 # Load feature file that gives Ensembl IDs and gene names to translate names to Ensembl IDs.
 file_RNA_features = paste0("/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_", genomeAssembly, ".tsv.gz")
 
-
 # Path to the output directory
 seurat_outputFolder = paste0(path,"/outputdata/", "NPC_Neuron_leiden1.2")
-
-# Filter out empty cells 
-seur <- subset(seur, nCount_ATAC != "NA")
-seur <- subset(seur, nCount_RNA != "0")
-
-colnames(seur)
 
 # Prepare data
 seur = prepareSeuratData_GRaNIE(seur, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
