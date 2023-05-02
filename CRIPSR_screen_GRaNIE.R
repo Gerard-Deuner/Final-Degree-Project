@@ -33,10 +33,10 @@ rownames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/i
 colnames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/cell.atac.csv.gz")$id
 
 ## create a seurat object
-seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC', project = 'CRISPR')
+seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC')
 
 #Combine rna and atac seurat object
-seur <- merge(seur.rna, seur.atac)
+seur <- merge(seur.rna, seur.atac, merge.data = TRUE, ) # bad alloc - run on cluster
 
 #Save seurat object
 qsave(seur, "/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
@@ -45,7 +45,7 @@ qsave(seur, "/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
 seur <- qread("/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
 
 ## Run scGRaNIE
-# Set up source of helper functions 
+# Set up source of helper functions
 source("/g/scb/zaugg/deuner/GRaNIE/code/GRaNIE_helper_functions.R")
 
 # Set genome assembly version
@@ -57,12 +57,18 @@ path = "/g/scb/zaugg/deuner/GRaNIE"
 # Use Zaugg internal TFBS folder
 TFBS_folder = NULL
 
-# Load feature file that gives Ensembl IDs and gene names to translate names to Ensembl IDs. 
+# Load feature file that gives Ensembl IDs and gene names to translate names to Ensembl IDs.
 file_RNA_features = paste0("/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_", genomeAssembly, ".tsv.gz")
 
 
 # Path to the output directory
 seurat_outputFolder = paste0(path,"/outputdata/", "NPC_Neuron_leiden1.2")
+
+# Filter out empty cells 
+seur <- subset(seur, nCount_ATAC != "NA")
+seur <- subset(seur, nCount_RNA != "0")
+
+colnames(seur)
 
 # Prepare data
 seur = prepareSeuratData_GRaNIE(seur, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
@@ -73,11 +79,11 @@ seur = prepareSeuratData_GRaNIE(seur, outputDir = seurat_outputFolder, pseudobul
 # runGRaNIE for the specified metadata column
 GRN = runGRaNIE(
   datasetName = "CRISPR_NPC_Neuron_Dataset",
-  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_leidenSub1.2_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"), 
-  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_leidenSub1.2.tsv.gz"), 
-  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_leidenSub1.2.tsv.gz"), 
+  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_leidenSub1.2_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"),
+  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
+  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
   file_metadata = paste0(seurat_outputFolder,"/metadata_leidenSub1.2.tsv.gz"),
-  genomeAssembly = "hg38", 
-  nCores = 8, 
+  genomeAssembly = "hg38",
+  nCores = 8,
   runNetworkAnalyses = TRUE,
-  correlation.method = "spearman") 
+  correlation.method = "spearman")
