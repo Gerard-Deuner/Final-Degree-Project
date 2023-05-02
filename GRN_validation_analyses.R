@@ -324,47 +324,55 @@ p1 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution) %>%
          summarise(TFcount = n_distinct(TF.ENSEMBL)),
-       aes(x = resolution, y = TFcount, group = resolution, fill = resolution)) + 
-  geom_bar(stat = "identity", col = "black", fill = coul) + 
+       aes(x = resolution, y = TFcount, group = resolution, fill = TFcount)) + 
+  geom_bar(stat = "identity", col = "black") + 
   labs(x = "Resolution", y = "TF count", title = "# TFs per resolution") + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5), legend.position="none") + 
+  scale_fill_gradient(low = "#132B43",
+                      high = "#56B1F7")
 
 # number of genes
 p2 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution) %>%
          summarise(GENEcount = n_distinct(gene.ENSEMBL)),
-       aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) + 
-  geom_bar(stat = "identity", col = "black", fill = coul) + 
+       aes(x = resolution, y = GENEcount, group = resolution, fill = GENEcount)) + 
+  geom_bar(stat = "identity", col = "black") + 
   labs(x = "Resolution", y = "Gene count", title = "# Genes per resolution") + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5), legend.position="none") + 
+  scale_fill_gradient(low = "#006633",
+                      high = "#99FFCC")
 
 # number of peaks
 p3 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution) %>%
          summarise(PEAKcount = n_distinct(peak.ID)),
-       aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) + 
-  geom_bar(stat = "identity", col = "black", fill = coul) + 
+       aes(x = resolution, y = PEAKcount, group = resolution, fill = PEAKcount)) + 
+  geom_bar(stat = "identity", col = "black") + 
   labs(x = "Resolution", y = "Peak count", title = "# Peaks per resolution") + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5), legend.position="none") + 
+  scale_fill_gradient(low = "#FF9900",
+                      high = "#FFFF99")
 
 # number total links
 p4 <- ggplot(all.grn.links %>%
          dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
          group_by(resolution) %>%
          tally(),
-       aes(x = resolution, y = n, group = resolution, fill = resolution)) + 
-  geom_bar(stat = "identity", col = "black", fill = coul) + 
+       aes(x = resolution, y = n, group = resolution, fill = n)) + 
+  geom_bar(stat = "identity", col = "black") + 
   labs(x = "Resolution", y = "Link count", title = "# Links per resolution") + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5))
+  theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5), legend.position="none") + 
+  scale_fill_gradient(low = "#9966CC",
+                      high = "#FFCCFF")
   
 
-pgrn <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+pgrn <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, labels = "AUTO")
 pgrn
 ggsave("/g/scb/zaugg/deuner/valdata/figures/GRNstats_comb_sp_nm.png", pgrn, device = "png")
 
