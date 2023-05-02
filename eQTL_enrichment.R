@@ -53,46 +53,51 @@ eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
 eqtl.names <- c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")
 colnames(eqtl) <- eqtl.names
 
+# convert all columns to proper class so bind_rows works
+eqtl <- eqtl %>%
+  mutate(Gene = as.character(Gene),
+         SNP = as.character(SNP),
+         SNPChr = as.integer(SNPChr),
+         SNPPos = as.integer(SNPPos),
+         MetaP = as.numeric(MetaP))
+
 ## store the eQTL data into a single dataframe
-# iterate over the eQTL files 
+# iterate over the eQTL files
 for (file in file.names){
-  
+
+  print(file)
   # read files one by one
+
   if (nature == "all"){
-    try(
-      data <- read.csv(paste0("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/", file), sep = "\t"),
-      silent = TRUE
-    )
-    try(
-      data <- read.csv(paste0("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/", file), sep = "\t"),
-      silent = TRUE
-    )
+    # read MetaBrain files
+    if (grepl("cortex", file, fixed = TRUE)){
+      data <- fread(paste0("/g/scb/zaugg/deuner/valdata/eQTL/metabrain/inputdata/", file), sep = "\t")
+    # read hiPSCs files
+    } else {
+    data <- fread(paste0("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/", file), sep = "\t")
+    }
+
   } else {
-    data <- read.csv(paste0(data.dir, file), sep = "\t")
+    data <- fread(paste0(data.dir, file), sep = "\t")
+  }
+
+  # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
+  col.names <- if (grepl("cortex", file, fixed = TRUE)){
+    c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")
+  } else {
+    c("Gene", "alt", "chr", "snp_pos", "pvalue")
   }
   
-  # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
-  try(
-  data <- data %>%
-    dplyr::select(c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")),  # metabrain column names
-  silent = TRUE
-  )
-  try(
-  data <- data %>%
-    dplyr::select(c("gene", "alt", "chr", "snp_pos", "pvalue")),   # hipsci column names
-  silent = TRUE
-  )
+  data <- dplyr::select(data, all_of(col.names))
 
   # rename column names (so they match with the global eQTL df's names)
   names(data) <- eqtl.names
-  
+
   # concatenate the file with the rest of eQTL files
-  eqtl <- rbind(eqtl, data)
-  
-  # lastly, remove the file from memory and read the next one
-  rm(data)
-  
+  eqtl <- bind_rows(lidt(eqtl, data)) #bind_rows much faster than rbind
+
 }
+
 
 head(eqtl)
 # set threshold for significant eQTLs
@@ -128,7 +133,7 @@ resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
-  grn <- read.csv(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"), row.names = NULL, sep = "\t")
+  grn <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"), row.names = NULL, sep = "\t")
   
   # read genes and their positions from Ensembl:
   genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
@@ -212,7 +217,7 @@ for (res in resolutions){
     dplyr::select(gene = grn.gene, peak = peak.ID, resolution, validated = link_validate)
   
   # add links data for this res to the global links df
-  all.links <- rbind(all.links, links)  
+  all.links <- bind_rows(all.links, links)  
   
   # # Background validation #
   # 
