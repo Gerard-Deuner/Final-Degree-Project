@@ -215,6 +215,9 @@ ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery.pdf", pg)
 
 
 # Peak - Gene validation from eQTL data
+
+colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "purple")
+
 i <- ggplot(val.df %>%                 
          filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
          #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
@@ -229,7 +232,7 @@ i <- ggplot(val.df %>%
   scale_color_manual(values = colours) +  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw()
-
+i
 ii <- ggplot(val.df %>%                 
               filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
               #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
@@ -295,6 +298,8 @@ for (res in resolutions){
   print(res)
   grn <- qread(paste0(path, "output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
   grn <- grn@connections$all.filtered$`0`
+  names(grn)
+    
   grn$resolution <- rep(resolutions[i], nrow(grn))
   if (i == 1) {
     all.grn.links <- grn
@@ -379,7 +384,7 @@ p6 <- ggplot(all.grn.links %>%
                dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
                group_by(resolution,TF.ENSEMBL) %>%
                summarise(GENEcount = n_distinct(gene.ENSEMBL)) %>%
-               filter(GENEcount < 200), # remove outliers
+               dplyr::filter(GENEcount < 20), # remove outliers
              aes(x = resolution, y = GENEcount, group = resolution, fill = resolution)) +
   geom_boxplot() + 
   labs(x = "Resolution", y = "# Genes per regulon", title = "Genes per Regulon Distribution") + 
@@ -403,7 +408,7 @@ p8 <- ggplot(all.grn.links %>%
                dplyr::select(TF.name, TF.ENSEMBL, peak.ID, gene.name, gene.ENSEMBL, resolution) %>% # select important columms
                group_by(resolution,TF.ENSEMBL) %>%
                summarise(PEAKcount = n_distinct(peak.ID)) %>%
-             filter(PEAKcount < 200), # remove outliers
+               dplyr::filter(PEAKcount < 20), # remove outliers
              aes(x = resolution, y = PEAKcount, group = resolution, fill = resolution)) +
   geom_boxplot() + 
   labs(x = "Resolution", y = "# Peaks per regulon", title = "Peaks per Regulon Distribution") + 
@@ -415,6 +420,4 @@ prgn
 ggsave("/g/scb/zaugg/deuner/valdata/figures/RegulonsStats_comb_sp_nm.png", prgn, device = "png")
 
 
-egrn <- qread("/g/scb/zaugg/deuner/GRaNIE/outputdata/combined_spearman_nomciro_Res_0.25/output_pseudobulk_wsnn_res.0.25_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
-egrn@connections$all.filtered
 
