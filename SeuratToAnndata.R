@@ -10,15 +10,22 @@ library(Seurat)
 library(SeuratData)
 library(SeuratDisk)
 
-# define dataset I want to convert
-dataset <- "timecourse"
+# read dataset argument from command line
+args <- commandArgs(trailingOnly = TRUE)
+
+# choose dataset
+dataset <- args[1]
 
 # set data directory
 data.dir <- "/home/deuner/deuner/GRaNIE/tmp/"
 
 # load the corresponding seurat object
-s.obj <- qread(paste0(data.dir, dataset, ".pp.seuratObject.qs"))
+s.obj <- qread(paste0(data.dir, dataset, ".pp.nomicro.seuratObject.qs"))
+
+# convert factor columns to character
+i <- sapply(s.obj@meta.data, is.factor)
+s.obj@meta.data[i] <- lapply(s.obj@meta.data[i], as.character)
 
 # conversion
-SaveH5Seurat(s.obj, filename = paste0(data.dir, dataset, ".h5Seurat"))
-Convert(paste0(data.dir, dataset, ".h5Seurat"), dest = "h5ad")
+SaveH5Seurat(s.obj, filename = paste0(data.dir, dataset, ".nomicro.h5Seurat"))
+Convert(paste0(data.dir, dataset, ".nomicro.h5Seurat"), dest = "h5ad")
