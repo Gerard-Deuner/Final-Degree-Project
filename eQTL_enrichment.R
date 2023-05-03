@@ -89,11 +89,11 @@ for (file in file.names){
     c("Gene", "alt", "chr", "snp_pos", "pvalue")
   }
   
-  # rename column names (so they match with the global eQTL df's names)
-  names(data) <- eqtl.names
-
   # select important columns
   data <- dplyr::select(data, col.names)
+  
+  # rename column names (so they match with the global eQTL df's names)
+  names(data) <- eqtl.names
   
   # concatenate the file with the rest of eQTL files
   eqtl <- bind_rows(list(eqtl, data)) #bind_rows much faster than rbind
