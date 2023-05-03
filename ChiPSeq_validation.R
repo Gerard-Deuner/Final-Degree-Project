@@ -19,7 +19,7 @@ dataset <- args[1] # timecourse | combined
 # define correlation method
 corr.method <- args[2] # pearson | spearman
 
-# validate links against all significat peak-gene links or peak-gene links from filtered GRN 
+# validate links against all significat TF-peak links or TF-peak links from filtered GRN 
 links.to.validate <- args[3] # all | filtered
 
 # set vector with the resolutions tested
