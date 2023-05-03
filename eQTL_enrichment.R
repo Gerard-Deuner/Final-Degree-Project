@@ -26,6 +26,8 @@ corr.method <- args[2] # pearson | spearman
 # define nature of the eQTL data 
 nature <- args[3] # metabrain | hipsci | all
 
+# validate links against all significat TF-peak links or TF-peak links from filtered GRN 
+links.to.validate <- args[4] # all | filtered
 
 # get list of eqtl files
 if (nature == "all"){
@@ -133,10 +135,21 @@ names(all.links) <- c("gene", "peak", "resolution", "validated")
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
 # iterate over GRNs
-for (res in resolutions){
+res <- 3
+#for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
-  grn <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"), sep = "\t")
+  grn <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+  
+  # take desired links
+  grn <- if(links.to.validate == "all"){
+    grn@connections$peak_genes$`0`
+    } else { 
+      grn@connections$all.filtered$`0`
+    }
+  
+  grn <- as.data.frame(grn)
+  names(grn)[5] <- "peak_gene.p_adj"
   
   # read genes and their positions from Ensembl:
   genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
@@ -205,7 +218,7 @@ for (res in resolutions){
   
   # classify links as positive or negative
   grn_links_validated <- grn %>%
-    left_join(filt_enhancers, by = "peak.ID") %>%
+    left_join(filt_enhancers, by = "peak.ID", multiple = "all") %>%
     dplyr::rename(grn.gene = gene.ENSEMBL) %>%
     dplyr::select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
     group_by(peak.ID, grn.gene) %>%
@@ -217,7 +230,8 @@ for (res in resolutions){
   # format validated links to be stored
   links <- grn_links_validated %>%
     tibble::add_column(resolution = res) %>% 
-    dplyr::select(gene = grn.gene, peak = peak.ID, resolution, validated = link_validate)
+    dplyr::select(gene = grn.gene, peak = peak.ID, resolution, validated = link_validate) %>%
+    distinct()
   
   # add links data for this res to the global links df
   all.links <- bind_rows(all.links, links)  
