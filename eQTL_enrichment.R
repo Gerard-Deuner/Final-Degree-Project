@@ -26,7 +26,7 @@ corr.method <- args[2] # pearson | spearman
 # define nature of the eQTL data 
 nature <- args[3] # metabrain | hipsci | all
 
-# validate links against all significat TF-peak links or TF-peak links from filtered GRN 
+# validate links against all significat peak-gene links or peak-gene links from filtered GRN 
 links.to.validate <- args[4] # all | filtered
 
 # get list of eqtl files
