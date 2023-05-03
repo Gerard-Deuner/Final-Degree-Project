@@ -19,8 +19,8 @@ dataset <- args[1] # timecourse | combined
 # define correlation method
 corr.method <- args[2] # pearson | spearman
 
-# define GRN method
-#methods <- c("GRaNIE", "SCENIC+", "Pando")
+# validate links against all significat peak-gene links or peak-gene links from filtered GRN 
+links.to.validate <- args[3] # all | filtered
 
 # set vector with the resolutions tested
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
@@ -81,6 +81,7 @@ FP.vec <- c()
 GRN.links.all <- as.data.frame(matrix(nrow = 0, ncol = 4))
 names(GRN.links.all) <- c("gene", "peak", "res", "bc")
 
+# iterate over GRNs
 for (res in resolutions){
   # set index
   j <- j + 1
@@ -90,8 +91,15 @@ for (res in resolutions){
   # read GRN object
   GRN <- qread(paste0(GRN.dir, "GRN.qs"))
   
-  # get TF-peak connections from GRN
-  GRN.links <- GRN@connections$TF_peaks$`0`$main %>% dplyr::filter(TF_peak.fdr < 0.2) %>% as.data.frame() %>% dplyr::select(peak.ID, TF.ID, TF_peak.r, TF_peak.fdr, TF_peak.fdr_direction)
+  # get desiredTF-peak connections from GRN
+  #GRN.links <- GRN@connections$TF_peaks$`0`$main %>% dplyr::filter(TF_peak.fdr < 0.2) %>% as.data.frame() %>% dplyr::select(peak.ID, TF.ID, TF_peak.r, TF_peak.fdr, TF_peak.fdr_direction)
+
+  GRN.links <- if(links.to.validate == "all"){
+    GRN@connections$TF_peaks$`0`$main %>% dplyr::filter(TF_peak.fdr < 0.2) %>% dplyr::select(peak.ID, TF.ID, TF_peak.r, TF_peak.fdr, TF_peak.fdr_direction)
+  } else { 
+    GRN@connections$all.filtered$`0` %>% dplyr::filter(TF_peak.fdr < 0.2)  %>% dplyr::select(peak.ID, TF.ID, TF_peak.r, TF_peak.fdr, TF_peak.fdr_direction)
+  }
+  ##RENAME THEM, TRY IT WORKS
   
   # adapt peaks format to links format
   form.peak <- rep("", nrow(GRN.links))
@@ -170,7 +178,7 @@ for (res in resolutions){
 dir.create(paste0("/g/scb/zaugg/deuner/valdata/ChiP-seq/validated_links/"))
 names(GRN.links.all)[4] <- c("validated")
 head(GRN.links.all)
-write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/ChiP-seq/validated_links/", dataset, "_", corr.method, ".csv"))
+write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/ChiP-seq/validated_links/", dataset, "_", corr.method, "_", links.to.validate, ".csv"))
 
 # 
 # TPs$resolution <- as.factor(resolutions)
