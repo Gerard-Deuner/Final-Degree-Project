@@ -39,7 +39,7 @@ eQTL.dir <- "/g/scb/zaugg/deuner/valdata/eQTL/validated_links/"
 pcHiC.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(pcHiC.df) <- c("gene", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
-for (file in grep(list.files(pcHiC.dir, pattern = "nomicro"), pattern = 'filtered', invert=TRUE, value=TRUE)){
+for (file in grep(list.files(pcHiC.dir, pattern = "nomicro\\."), pattern = 'filtered', invert=TRUE, value=TRUE)){
   print(file)
   df <- read.csv(paste0(pcHiC.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
@@ -56,7 +56,7 @@ for (file in grep(list.files(pcHiC.dir, pattern = "nomicro"), pattern = 'filtere
 ChiP.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(ChiP.df) <- c("TF", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
-for (file in grep(list.files(ChiP.dir, pattern = "nomicro"), pattern = 'filtered', invert=TRUE, value=TRUE)){
+for (file in grep(list.files(ChiP.dir, pattern = "nomicro."), pattern = 'filtered', invert=TRUE, value=TRUE)){
   print(file)
   df <- read.csv(paste0(ChiP.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
@@ -120,7 +120,7 @@ colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
 # TF recovery from ChiP-seq data
 ggplot(val.df %>%                  # validated == 1 adds more occurrences, need to figure out why
-         filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
+         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
          group_by(setting, resolution) %>% # group the data by resolution and setting
@@ -139,7 +139,7 @@ val.df %>%
  # CHECK FIRST GROUPING BY SETTING LOOK THE SUMS AND THEN BY SETTING AND RES ANS SEE IF ALLL THE RES SUMS EQUAL THE SETTING SUM
 
 ggplot(val.df %>% 
-         filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
          group_by(resolution, setting) %>% # group the data by resolution and setting
@@ -158,7 +158,7 @@ ggplot(val.df %>%
 
 # Peak-Gene links recovery from pcHi-C
 a <- ggplot(val.df %>%                 
-         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
          #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
          group_by(setting, resolution) %>% # group the data by resolution and setting
          summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -174,7 +174,7 @@ a <- ggplot(val.df %>%
   theme_bw() 
 
 a2 <- ggplot(val.df %>%                 
-              filter(validation == "pcHi-C", validated == 1) %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "pcHi-C", validated == 1) %>% # want to measure frequency of recoveries 
               #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
               group_by(setting, resolution) %>% # group the data by resolution and setting
               tally(), #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -188,7 +188,7 @@ a2 <- ggplot(val.df %>%
   theme_bw() 
 
 b <- ggplot(val.df %>%                 
-         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
          group_by(setting, resolution) %>% # group the data by resolution and setting
          summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
        aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
@@ -204,7 +204,7 @@ b <- ggplot(val.df %>%
         strip.text.y = element_blank())
   
 c <- ggplot(val.df %>%                 
-         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
          group_by(setting, resolution) %>% # group the data by resolution and setting
          summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
          mutate(non_recovered = GRN_links - recovered) %>%
@@ -220,7 +220,7 @@ c <- ggplot(val.df %>%
         strip.background = element_rect(fill = colours))
 
 d <- ggplot(val.df %>%                 
-         filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+         dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
          group_by(setting, resolution) %>% # group the data by resolution and setting
          summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
          mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
@@ -241,7 +241,7 @@ ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery.pdf", pg)
 colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "purple")
 
 i <- ggplot(val.df %>%                 
-         filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+         dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
          #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
          #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
          group_by(setting, resolution) %>% # group the data by resolution and setting
@@ -258,7 +258,7 @@ i <- ggplot(val.df %>%
   theme_bw()
 i
 ii <- ggplot(val.df %>%                 
-              filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
               #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recoveredLINKs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -275,7 +275,7 @@ ii <- ggplot(val.df %>%
         strip.text.y = element_blank())
 
 iii <- ggplot(val.df %>%                 
-              filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
               #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -292,7 +292,7 @@ iii <- ggplot(val.df %>%
         strip.background = element_rect(fill = colours))
 
 iv <- ggplot(val.df %>%                 
-              filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
               #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -384,7 +384,7 @@ colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
 # TF recovery from ChiP-seq data
 ggplot(val.df %>% 
-         filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
          group_by(resolution, setting) %>% # group the data by resolution and setting
@@ -402,7 +402,7 @@ ggplot(val.df %>%
 
 # Peak-Gene links recovery from pcHi-C
 a <- ggplot(val.df %>%                 
-              filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
               #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -412,19 +412,21 @@ a <- ggplot(val.df %>%
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
   scale_color_manual(values = colours) +  
+  theme_bw()+
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) + 
-  theme_bw() 
+        axis.ticks.x=element_blank(),
+        strip.background = element_blank(),
+        strip.text.y = element_blank())
 
 b <- ggplot(val.df %>%                 
-              filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recoveredTFs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
             aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
   facet_grid("setting") +
-  labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Recovery distribution across resulutions") +
+  labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Recovery distribution across resolutions") +
   scale_fill_manual(values = colours) +  
   theme_bw() +
   theme(axis.title.x=element_blank(),
@@ -434,7 +436,7 @@ b <- ggplot(val.df %>%
         strip.text.y = element_blank())
 
 c <- ggplot(val.df %>%                 
-              filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
               mutate(non_recovered = GRN_links - recovered) %>%
@@ -450,7 +452,7 @@ c <- ggplot(val.df %>%
         strip.background = element_rect(fill = colours))
 
 d <- ggplot(val.df %>%                 
-              filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
               group_by(setting, resolution) %>% # group the data by resolution and setting
               summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
               mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
@@ -471,7 +473,7 @@ ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery_filtered.pdf", pg)
 colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "purple")
 
 i <- ggplot(val.df %>%                 
-              filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+              dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
               #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
               #dplyr::select(gene, peak, setting, resolution, validated, corr.method) %>%  # remove useless columns
               group_by(setting, resolution) %>% # group the data by resolution and setting
@@ -488,7 +490,7 @@ i <- ggplot(val.df %>%
   theme_bw()
 i
 ii <- ggplot(val.df %>%                 
-               filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+               dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
                #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
                group_by(setting, resolution) %>% # group the data by resolution and setting
                summarise(recoveredLINKs = sum(validated)), #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -505,7 +507,7 @@ ii <- ggplot(val.df %>%
         strip.text.y = element_blank())
 
 iii <- ggplot(val.df %>%                 
-                filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+                dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
                 #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
                 group_by(setting, resolution) %>% # group the data by resolution and setting
                 summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -522,7 +524,7 @@ iii <- ggplot(val.df %>%
         strip.background = element_rect(fill = colours))
 
 iv <- ggplot(val.df %>%                 
-               filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
+               dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries 
                #filter(grepl("nomicro", setting)) %>% # just consider GRNs built without microglial cells
                group_by(setting, resolution) %>% # group the data by resolution and setting
                summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
@@ -544,26 +546,32 @@ ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery_eQTL_filtered.png",
 ################################
 
 # path of setting
-path <- "/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/"
+path <- "/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/"
 
 # define resolutions 
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
 
+# df were all links are going to be stores
+all.grn.links <- as.data.frame(matrix(nrow = 0, ncol = 16))
+names(all.grn.links) <- c("TF.ID",                  "TF.name",                "TF.ENSEMBL",             "TF_peak.r_bin",          "TF_peak.r",             
+                          "TF_peak.fdr",            "TF_peak.fdr_direction",  "TF_peak.connectionType", "peak.ID",                "peak_gene.distance",    
+                          "peak_gene.r",            "peak_gene.p_raw",        "peak_gene.p_adj",        "gene.ENSEMBL",           "gene.name",             
+                          "gene.type")
 # read GRNs
-i <- 1
 for (res in resolutions){
   print(res)
   grn <- qread(paste0(path, "output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
   grn <- grn@connections$all.filtered$`0`
   names(grn)
     
-  grn$resolution <- rep(resolutions[i], nrow(grn))
-  if (i == 1) {
-    all.grn.links <- grn
-  } else {
-    all.grn.links <- rbind(all.grn.links, grn)
-  }
-  i <- i + 1
+  grn$resolution <- rep(res, nrow(grn))
+  
+  all.grn.links <- rbind(all.grn.links, grn)
+  # if (res == 0.1) {
+  #   all.grn.links <- grn
+  # } else {
+  #   all.grn.links <- rbind(all.grn.links, grn)
+  # }
   
 } 
 
