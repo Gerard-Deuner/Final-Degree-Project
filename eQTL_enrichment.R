@@ -135,8 +135,7 @@ names(all.links) <- c("gene", "peak", "resolution", "validated")
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
 # iterate over GRNs
-res <- 3
-#for (res in resolutions){
+for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
   grn <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", dataset, "_batch_mode_", corr.method, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
@@ -396,7 +395,7 @@ res <- 3
 }
 
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
-write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/", dataset, "_", corr.method, "_eQTL_links.tsv"))
+write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/", dataset, "_", corr.method, "_", links.to.validate, "_eQTL_links.tsv"))
   
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 round(mean_or, digits = 3) 
