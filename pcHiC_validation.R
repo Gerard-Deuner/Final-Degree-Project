@@ -27,6 +27,9 @@ corr.method <- args[2] # pearson | spearman
 # set up which cell type links are used for validation
 cell.type <- args[3] # neuron | NPC | iPSC | all
 
+# validate links against all significant peak-gene links or peak-gene links from filtered GRN 
+links.to.validate <- args[4] # all | filtered
+
 # set output dir
 out.dir <- paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/results/", cell.type, "_", dataset, "_", corr.method, "/")
 dir.create(out.dir) # create dir if it doesn't exist already
@@ -97,14 +100,17 @@ for (res in resolutions){
   # read GRN object
   GRN <- qread(paste0(GRN.dir, "GRN.qs"))
   
-  # get gene-peak connections from GRN                                                        # gene name if all links
-  #GRN.links <- GRN@connections$all.filtered$`0` %>% as.data.frame() %>% dplyr::select(peak.ID, gene.name, peak_gene.r, peak_gene.p_raw)
-  GRN.links <- GRN@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% as.data.frame() %>% dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.r, peak_gene.p_raw)
+  # get gene-peak connections from GRN
+  GRN.links <- if(links.to.validate == "all"){
+    GRN@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% as.data.frame() %>% dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.r, peak_gene.p_raw)
+  } else { 
+    GRN.links <- GRN@connections$all.filtered$`0` %>% as.data.frame() %>% dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.r, peak_gene.p_raw)
+  }
   
   # adapt peaks format to links format
   form.peak <- rep("", nrow(GRN.links))
   for (i in 1:nrow(GRN.links)){
-    peak <- as.character(GRN.links$peak.ID[i])  #peak.ID if consider all links
+    peak <- as.character(GRN.links$peak.ID[i])
     split.peak <- strsplit(peak, split = ":")
     new.peak <- paste(split.peak[[1]][1], split.peak[[1]][2], sep = "-")
     form.peak[i] <- new.peak
@@ -128,11 +134,11 @@ for (res in resolutions){
   # add resolution information to the GRN.links df
   GRN.links$resolution <- rep(resolutions[j], nrow(GRN.links))
   # get gene names 
-  GRN.links <- GRN.links %>% # UNCOMMENT IF USING ALL LINKS
+  GRN.links <- GRN.links %>% 
     inner_join(annotLookup, by = "gene.ENSEMBL", multiple = "all") 
   
   # store GRN links data in df for all links
-  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(gene, peak, resolution, bc, gene.ENSEMBL)) # GENE if all links
+  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(gene, peak, resolution, bc, gene.ENSEMBL)) 
 
   # Compute ROC curve
   par(pty = "s")
@@ -171,7 +177,7 @@ for (res in resolutions){
 dir.create(paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/"))
 names(GRN.links.all)[4] <- c("validated")
 head(GRN.links.all)
-write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", dataset, "_", corr.method, ".csv"))
+write.csv(GRN.links.all, paste0("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/", dataset, "_", corr.method, "_", links.to.validate, ".csv"))
 
 
 # barplots of TP vs FP
