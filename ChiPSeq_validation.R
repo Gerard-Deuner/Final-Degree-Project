@@ -99,73 +99,72 @@ for (res in resolutions){
   } else { 
     GRN@connections$all.filtered$`0` %>% dplyr::filter(TF_peak.fdr < 0.2)  %>% dplyr::select(peak.ID, TF.ID, TF_peak.r, TF_peak.fdr, TF_peak.fdr_direction)
   }
-  ##RENAME THEM, TRY IT WORKS
   
-  # adapt peaks format to links format
-  form.peak <- rep("", nrow(GRN.links))
-  for (i in 1:nrow(GRN.links)){
-    peak <- as.character(GRN.links$peak.ID[i])
-    split.peak <- strsplit(peak, split = ":")
-    new.peak <- paste(split.peak[[1]][1], split.peak[[1]][2], sep = "-")
-    form.peak[i] <- new.peak
+  if (nrow(GRN.links) > 0) {
+    # adapt peaks format to links format
+    form.peak <- rep("", nrow(GRN.links))
+    for (i in 1:nrow(GRN.links)){
+      peak <- as.character(GRN.links$peak.ID[i])
+      split.peak <- strsplit(peak, split = ":")
+      new.peak <- paste(split.peak[[1]][1], split.peak[[1]][2], sep = "-")
+      form.peak[i] <- new.peak
+    }
+    GRN.links$id <- seq(1:nrow(GRN.links))
+    GRN.links$peak.ID <- form.peak 
+    names(GRN.links)[1:2] <- c("peak", "TF")
+    # just keep the TF name
+    GRN.links$TF <- as.character(GRN.links$TF)
+    GRN.links$TF <- strsplit(GRN.links$TF, "[.]") %>% map(1) %>% as.character()
+    
+    # Binary classification
+    # get rows that match in GRN links and HiC links by gene name and peak id
+    TP <- inner_join(GRN.links, links, by = c("peak", "TF"), multiple = "all")
+    TP$res <- rep(resolutions[j], nrow(TP))
+    TP.all <- rbind(TP.all, TP)
+    # set 1 if they are in ChiP-seq data and 0 if not
+    bc <- ifelse(GRN.links$id %in% TP$id, yes = 1, no = 0)
+    # add column to GRN_links with that information
+    GRN.links$bc <- bc
+    # create an confusion matrix 
+    conf.m <- table(bc)
+    # add resolution information to the GRN.links df
+    GRN.links$resolution <- rep(resolutions[j], nrow(GRN.links))
+    
+    # store GRN links data in df for all links
+    GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(TF, peak, resolution, bc))
+    
+    # Compute ROC curve
+    par(pty = "s")
+    
+    # print metrics
+    print("")
+    print(paste0("Resolution: ", res))
+    print(paste0("GRN links: ", nrow(GRN.links)))
+    print(paste0("TP: ", nrow(TP)))
+    FP <- nrow(GRN.links) - nrow(TP)
+    print(paste0("FP: ", FP))
+    print("")
+    
+    # Store TPs and FPs
+    TP.vec <- c(TP.vec, nrow(TP))
+    FP.vec <- c(FP.vec, FP)
+    
+    # if ((first == TRUE) & (sum(bc) > 0)){
+    #   ROC <- roc(GRN.links$bc, GRN.links$TF_peak.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
+    #              xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
+    #              col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = FALSE, print.auc.x = 115, print.auc.y = aucy[j])
+    #   legend("bottomright",  legend = resolutions, col = colors, ncol = 2)
+    #   first = FALSE
+    #   print(ci.auc(ROC))
+    # }
+    # if ((first == FALSE) & (sum(bc) > 0)){ 
+    #   ROC <- roc(GRN.links$bc, GRN.links$TF_peak.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
+    #              xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
+    #              col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = TRUE, print.auc.x = 115, print.auc.y = aucy[j])
+    #   legend("bottomright", legend = resolutions, col = colors, lwd = 4, ncol = 2)
+    #   print(ci.auc(ROC))
+    # }
   }
-  GRN.links$id <- seq(1:nrow(GRN.links))
-  GRN.links$peak.ID <- form.peak 
-  names(GRN.links)[1:2] <- c("peak", "TF")
-  # just keep the TF name
-  GRN.links$TF <- as.character(GRN.links$TF)
-  GRN.links$TF <- strsplit(GRN.links$TF, "[.]") %>% map(1) %>% as.character()
-  
-  # Binary classification
-  # get rows that match in GRN links and HiC links by gene name and peak id
-  TP <- inner_join(GRN.links, links, by = c("peak", "TF"), multiple = "all")
-  TP$res <- rep(resolutions[j], nrow(TP))
-  TP.all <- rbind(TP.all, TP)
-  # set 1 if they are in ChiP-seq data and 0 if not
-  bc <- ifelse(GRN.links$id %in% TP$id, yes = 1, no = 0)
-  # add column to GRN_links with that information
-  GRN.links$bc <- bc
-  # create an confusion matrix 
-  conf.m <- table(bc)
-  # add resolution information to the GRN.links df
-  GRN.links$resolution <- rep(resolutions[j], nrow(GRN.links))
-  
-  # store GRN links data in df for all links
-  GRN.links.all <- rbind(GRN.links.all, GRN.links %>% dplyr::select(TF, peak, resolution, bc))
-  
-  # Compute ROC curve
-  par(pty = "s")
-  
-  # print metrics
-  print("")
-  print(paste0("Resolution: ", res))
-  print(paste0("GRN links: ", nrow(GRN.links)))
-  print(paste0("TP: ", nrow(TP)))
-  FP <- nrow(GRN.links) - nrow(TP)
-  print(paste0("FP: ", FP))
-  print("")
-  
-  # Store TPs and FPs
-  TP.vec <- c(TP.vec, nrow(TP))
-  FP.vec <- c(FP.vec, FP)
-  
-  # if ((first == TRUE) & (sum(bc) > 0)){
-  #   ROC <- roc(GRN.links$bc, GRN.links$TF_peak.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
-  #              xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
-  #              col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = FALSE, print.auc.x = 115, print.auc.y = aucy[j])
-  #   legend("bottomright",  legend = resolutions, col = colors, ncol = 2)
-  #   first = FALSE
-  #   print(ci.auc(ROC))
-  # }
-  # if ((first == FALSE) & (sum(bc) > 0)){ 
-  #   ROC <- roc(GRN.links$bc, GRN.links$TF_peak.r, plot = TRUE, legacy.axes = TRUE, percent = TRUE,
-  #              xlab="False Positive Percentage | 1 - Specificity", ylab="True Positive Percentage | Sensitivity",
-  #              col = colors[j], lwd=2, print.auc = TRUE, main = "ROC", add = TRUE, print.auc.x = 115, print.auc.y = aucy[j])
-  #   legend("bottomright", legend = resolutions, col = colors, lwd = 4, ncol = 2)
-  #   print(ci.auc(ROC))
-  # }
-  
-  
 }
 # save TPs and FPs data
 # print(TP.vec)
