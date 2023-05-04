@@ -118,27 +118,9 @@ val.df$validated <- as.numeric(val.df$validated)
 # define colours for the 4 nomicro settings
 colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
-# TF recovery from ChiP-seq data
-ggplot(val.df %>%                  # validated == 1 adds more occurrences, need to figure out why
-         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries #, grepl("nomicro", setting)
-         distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
-         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
-         group_by(setting, resolution) %>% # group the data by resolution and setting
-         summarise(recoveredTFs = sum(validated), .groups = "drop"), # count number of TFs recovered per each resolution and setting
-       aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
-  geom_line(size = 1) +
-  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  theme_bw() 
 
-# works well no!
-val.df %>% 
-  filter(validation == "ChiP-seq", resolution == 3, setting == "timecourse_pearson") %>% distinct(gene, resolution, setting, .keep_all = TRUE) %>%
-  dplyr::select(validated) %>% table()
-
- # CHECK FIRST GROUPING BY SETTING LOOK THE SUMS AND THEN BY SETTING AND RES ANS SEE IF ALLL THE RES SUMS EQUAL THE SETTING SUM
-
-ggplot(val.df %>% 
+# TF recovery from ChiP-seq data (unique Tfs)
+tf1 <- ggplot(val.df %>% 
          dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
          distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
@@ -146,14 +128,86 @@ ggplot(val.df %>%
          summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
        aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
-  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
+  scale_fill_manual(values = colours) +  
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "Unique TFs") +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         strip.background = element_blank(),
         strip.text.y = element_blank(),
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting")
- 
+
+# TF recovery from ChiP-seq data (allow duplicate TFs)
+tf2<- ggplot(val.df %>% 
+         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+         #distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
+         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+         group_by(resolution, setting) %>% # group the data by resolution and setting
+         summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+       aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "(allow duplicates)") +
+  scale_fill_manual(values = colours) +  
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting")
+
+tfplots <- ggarrange(tf1, tf2, nrow = 1, ncol = 2, common.legend = TRUE)
+tfplots
+ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", tfplots)
+
+# TF-peak links recovery from ChiP-seq data
+tfp1 <- ggplot(val.df %>% 
+                dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+                dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                group_by(setting, resolution) %>% # group the data by resolution and setting
+                summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
+              aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "# TF-peak links recovered", x = "Cluster Resolutions", title = "TF-peak links Recovery") +
+  scale_fill_manual(values = colours) +  
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting") 
+
+
+tfp3 <- ggplot(val.df %>%                 
+              dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries 
+              group_by(setting, resolution) %>% # group the data by resolution and setting
+              summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+              mutate(non_recovered = GRN_links - recovered) %>%
+              pivot_longer(c(recovered, non_recovered), names_to = "links", values_to = "value"),
+            aes(resolution, y = value , group = setting, fill = links)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid("setting") +
+  labs(y = "# TF-PEAK Links", x = "Cluster Resolutions", title = "Recovered vs. Non-recovered Links") +
+  scale_fill_manual(values = c("grey", "#FFCC00")) +  
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        strip.text.y = element_blank(),
+        strip.background = element_rect(fill = colours))
+
+tfp4 <- ggplot(val.df %>%                 
+              dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries 
+              group_by(setting, resolution) %>% # group the data by resolution and setting
+              summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+              mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
+            aes(resolution, y = ratio , group = setting, col = setting)) + 
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "# TF-Peak Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
+  scale_color_manual(values = colours) +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
+
+tfp <- ggarrange(tfp1, tfp3, tfp4, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+tfp
+ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", pg)
 
 
 # Peak-Gene links recovery from pcHi-C
@@ -383,21 +437,95 @@ val.df$validated <- as.numeric(val.df$validated)
 colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
 # TF recovery from ChiP-seq data
-ggplot(val.df %>% 
-         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
-         distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
-         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
-         group_by(resolution, setting) %>% # group the data by resolution and setting
-         summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
-       aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
+# TF recovery from ChiP-seq data (unique Tfs)
+tf1 <- ggplot(val.df %>% 
+                dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+                distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
+                dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                group_by(resolution, setting) %>% # group the data by resolution and setting
+                summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+              aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
-  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery") +
+  scale_fill_manual(values = colours) +  
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "Unique TFs") +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         strip.background = element_blank(),
         strip.text.y = element_blank(),
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting")
+
+# TF recovery from ChiP-seq data (allow duplicate TFs)
+tf2<- ggplot(val.df %>% 
+               dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+               #distinct(gene, resolution, setting, .keep_all = TRUE) %>% # just consider the TF once per GRN, it if appears in the eGRN multiple times it has a recovery of 1
+               dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+               group_by(resolution, setting) %>% # group the data by resolution and setting
+               summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
+             aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "(allow duplicates)") +
+  scale_fill_manual(values = colours) +  
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting")
+
+tfplots <- ggarrange(tf1, tf2, nrow = 1, ncol = 2, common.legend = TRUE)
+tfplots
+ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery_filtered.pdf", tfplots)
+
+# TF-peak links recovery from ChiP-seq data
+tfp1 <- ggplot(val.df %>% 
+                 dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+                 dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                 group_by(setting, resolution) %>% # group the data by resolution and setting
+                 summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
+               aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "# TF-peak links recovered", x = "Cluster Resolutions", title = "TF-peak links Recovery") +
+  scale_fill_manual(values = colours) +  
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting") 
+
+
+tfp3 <- ggplot(val.df %>%                 
+                 dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries 
+                 group_by(setting, resolution) %>% # group the data by resolution and setting
+                 summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+                 mutate(non_recovered = GRN_links - recovered) %>%
+                 pivot_longer(c(recovered, non_recovered), names_to = "links", values_to = "value"),
+               aes(resolution, y = value , group = setting, fill = links)) + 
+  geom_bar(stat = "identity") + 
+  facet_grid("setting") +
+  labs(y = "# TF-PEAK Links", x = "Cluster Resolutions", title = "Recovered vs. Non-recovered Links") +
+  scale_fill_manual(values = c("grey", "#FFCC00")) +  
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        strip.text.y = element_blank(),
+        strip.background = element_rect(fill = colours))
+
+tfp4 <- ggplot(val.df %>%                 
+                 dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries 
+                 group_by(setting, resolution) %>% # group the data by resolution and setting
+                 summarise(recovered = sum(validated), GRN_links = length(validated)) %>% #%>% # count number of peak-gene links recovered per each resolution and setting
+                 mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
+               aes(resolution, y = ratio , group = setting, col = setting)) + 
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "# TF-Peak Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
+  scale_color_manual(values = colours) +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
+
+tfp <- ggarrange(tfp1, tfp3, tfp4, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
+tfp
+ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery_filtered.pdf", pg)
 
 
 # Peak-Gene links recovery from pcHi-C
