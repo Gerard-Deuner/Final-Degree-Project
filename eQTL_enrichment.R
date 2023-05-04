@@ -79,20 +79,20 @@ for (file in file.names){
     } else {
     data <- fread(paste0("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/", file), sep = "\t")
     }
+    
+    # remove uninformative columns filter for the eQTL significance threshold to reduce the size
+    col.names <- if (grepl("cortex", file, fixed = TRUE)){
+      c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")
+    } else {
+      c("gene", "alt", "chr", "snp_pos", "pvalue")
+    }
+    
+    # select important columns
+    data <- data <- dplyr::select(all_of(col.names))
 
   } else {
     data <- fread(paste0(data.dir, file), sep = "\t")
   }
-
-  # remove uninformative columns filter for the eQTL sifnificance threshold to reduce the size
-  col.names <- if (grepl("cortex", file, fixed = TRUE)){
-    c("Gene", "SNP", "SNPChr", "SNPPos", "MetaP")
-  } else {
-    c("gene", "alt", "chr", "snp_pos", "pvalue")
-  }
-  
-  # select important columns
-  data <- dplyr::select(data, col.names)
   
   # rename column names (so they match with the global eQTL df's names)
   names(data) <- eqtl.names
@@ -120,7 +120,7 @@ eqtl$Gene <- strsplit(eqtl$Gene, "[.]") %>%
 gr.eqtl <- eqtl %>%
   dplyr::select(Gene, SNP, SNPChr, SNPPos, MetaP) %>%
   mutate(fdr = p.adjust(MetaP, method = "fdr")) %>%
-  filter(fdr < eQTL.FDR) %>%
+  dplyr::filter(fdr < eQTL.FDR) %>%
   dplyr::rename(eqtl.gene = Gene) %>%
   makeGRangesFromDataFrame(., keep.extra.columns=T, seqnames.field = 'SNPChr', start.field = 'SNPPos', end.field = 'SNPPos')
 
@@ -165,8 +165,8 @@ for (res in resolutions){
     
     #Filter based on FDR and include only positive links
     grn <- grn %>%
-      filter(peak_gene.r > 0) %>%
-      filter(peak_gene.p_adj < GRN_FDR)
+      dplyr::filter(peak_gene.r > 0) %>%
+      dplyr::filter(peak_gene.p_adj < GRN_FDR)
     
     # filter for GRN enhancers
     # Include the GRN enhancers that overlap with at least one significant eQTL SNP
@@ -211,7 +211,7 @@ for (res in resolutions){
       mutate(peak_gene.distance_bin = factor(peak_gene.distance_bin, levels = c("0-50kb", "50-100kb", "100-150kb", "150-200kb", "200-250kb"))) %>%
       dplyr::select(peak.ID, gene.ENSEMBL, peak_gene.distance, peak_gene.distance_bin) %>%
       distinct() %>%
-      filter(peak.ID %in% filt_enhancers$peak.ID)
+      dplyr::filter(peak.ID %in% filt_enhancers$peak.ID)
     
     # Number of enhancer-gene links in GRN:
     nrow(grn)
