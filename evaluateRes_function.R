@@ -16,8 +16,59 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
   #   0.1     130         3           85          1320                  754
   #   ...     ...        ...         ...          ...                   ...
 
+  # or 
+  
+  #         gene/TF         peak          resolution      validated            setting           dataset         corr.method     
+  # link1   FOX1    chr1:187183-187634        0.5           1           combined_spearman     combined          spearman  
+  # At the moment it the function is implemented for this format
+  
+  
   # Scoring function: (0-1)
   #     f(eGRN) = x(0.5y + 0.1z + 0.4t)
+  
+  
+  # get number of validated TF-peak links from ChiP-seq
+  ChiP.val <- val.df %>% 
+    dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries
+    dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+    group_by(setting, resolution) %>% # group the data by resolution and setting
+    summarise(recoveredTFPEAKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
+    dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
+    pull(recoveredTFPEAKs) # get number of TF-peak links
+
+  # get number of validated peak-gene links from pcHi-C
+  pcHiC.val <- val.df %>% 
+    dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries
+    dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+    group_by(setting, resolution) %>% # group the data by resolution and setting
+    summarise(recoveredLINKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
+    dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
+    pull(recoveredLINKSs) # get number of TF-peak links
+  
+  # get number of validated peak-gene links from eQTL
+  eQTL.val <- val.df %>% 
+    dplyr::filter(validation == "eQTL") %>% # want to measure frequency of recoveries
+    dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+    group_by(setting, resolution) %>% # group the data by resolution and setting
+    summarise(recoveredLINKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
+    dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
+    pull(recoveredLINKSs) # get number of TF-peak links
+  
+  # get total number of inferred TF-peak links
+  tf.peak.links <- val.df %>%                 
+    dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries 
+    group_by(setting, resolution) %>% # group the data by resolution and setting
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% # count number of peak-gene links recovered per each resolution and setting
+    dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
+    pull(GRN_links) # get number of total TF-peak links
+  
+  # get total number of inferred peak-gene links
+  tf.peak.links <- val.df %>%                 
+    dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
+    group_by(setting, resolution) %>% # group the data by resolution and setting
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% # count number of peak-gene links recovered per each resolution and setting
+    dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
+    pull(GRN_links) # get number of total peak-gene links
   
   # peak-gene QC score
   x = qc
