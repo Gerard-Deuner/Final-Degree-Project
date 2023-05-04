@@ -88,7 +88,7 @@ for (file in file.names){
     }
     
     # select important columns
-    data <- data <- dplyr::select(all_of(col.names))
+    data <- data %>% dplyr::select(all_of(col.names))
 
   } else {
     data <- fread(paste0(data.dir, file), sep = "\t")
