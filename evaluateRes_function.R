@@ -43,7 +43,7 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
     group_by(setting, resolution) %>% # group the data by resolution and setting
     summarise(recoveredLINKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
     dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
-    pull(recoveredLINKSs) # get number of TF-peak links
+    pull(recoveredLINKs) # get number of TF-peak links
   
   # get number of validated peak-gene links from eQTL
   eQTL.val <- val.df %>% 
@@ -52,7 +52,7 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
     group_by(setting, resolution) %>% # group the data by resolution and setting
     summarise(recoveredLINKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
     dplyr::filter(resolution == res, setting == "combined_spearman_nomicro") %>% # filter for resolution and setting
-    pull(recoveredLINKSs) # get number of TF-peak links
+    pull(recoveredLINKs) # get number of TF-peak links
   
   # get total number of inferred TF-peak links
   tf.peak.links <- val.df %>%                 
@@ -63,7 +63,7 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
     pull(GRN_links) # get number of total TF-peak links
   
   # get total number of inferred peak-gene links
-  tf.peak.links <- val.df %>%                 
+  peak.gene.links <- val.df %>%                 
     dplyr::filter(validation == "pcHi-C") %>% # want to measure frequency of recoveries 
     group_by(setting, resolution) %>% # group the data by resolution and setting
     summarise(recovered = sum(validated), GRN_links = length(validated)) %>% # count number of peak-gene links recovered per each resolution and setting
@@ -71,19 +71,19 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
     pull(GRN_links) # get number of total peak-gene links
   
   # peak-gene QC score
-  x = qc
+  x <- qc
   
   # pcHi-C validation score
-  y = data[res, pcHiC.val] / data[res, peak.gene.links]
+  y <- pcHiC.val / peak.gene.links
   
   # ChiP-seq validation score
-  z = data[res, ChiP.val] / data[res, tf.peak.links]
+  z <- ChiP.val / tf.peak.links
   
   # eQTL validation score
-  t = data[res, eQTL.val] / data[res, peak.gene.links]
+  t <- eQTL.val / peak.gene.links
   
   # compute function
   out <- x * ( (pcHiC.weight * y) + (ChiP.weight * z) + (eQTL.weight * t) )
   
-  print(paste(res, "Evaluation Score:", out, sep = " "))
+  print(paste("Res", res, "Evaluation Score:", out, sep = " "))
 }
