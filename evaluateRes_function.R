@@ -1,3 +1,7 @@
+################################################
+# Score Resolutions based on previous analyses #
+################################################
+
 # create function to evaluate which is the best resolution based on validation scores
 evaluateRes <- function(data,                  # df with resolutions as rows and validation stats as columns. (data.frame)
                         res,                   # resolution to evaluate. (int)
@@ -13,6 +17,22 @@ evaluateRes <- function(data,                  # df with resolutions as rows and
   #   ...     ...        ...         ...          ...                   ...
 
   # Scoring function: (0-1)
-  #     f(eGRN) = x(0.5y)
+  #     f(eGRN) = x(0.5y + 0.1z + 0.4t)
   
+  # peak-gene QC score
+  x = qc
+  
+  # pcHi-C validation score
+  y = data[res, pcHiC.val] / data[res, peak.gene.links]
+  
+  # ChiP-seq validation score
+  z = data[res, ChiP.val] / data[res, tf.peak.links]
+  
+  # eQTL validation score
+  t = data[res, eQTL.val] / data[res, peak.gene.links]
+  
+  # compute function
+  out <- x * ( (pcHiC.weight * y) + (ChiP.weight * z) + (eQTL.weight * t) )
+  
+  print(paste(res, "Evaluation Score:", out, sep = " "))
 }
