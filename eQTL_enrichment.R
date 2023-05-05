@@ -36,6 +36,7 @@ if (nature == "all"){
   file.names.brain <- grep(".txt.gz", file.names.brain, value = TRUE)
   file.names.hipsci <- list.files("/g/scb/zaugg/deuner/valdata/eQTL/hipsci/inputdata/")
   file.names.hipsci <- grep(".txt.gz", file.names.hipsci, value = TRUE)
+  file.names.hipsci <- grep("full", file.names.hipsci, value = TRUE)
   file.names <- c(file.names.brain, file.names.hipsci)
 
   } else {
@@ -49,7 +50,8 @@ if (nature == "all"){
   # just take into account files containing the correct content
   file.names <- grep(".txt.gz", file.names, value = TRUE)
 
-}
+  }
+
 
 # dataframe where all eQTLs are going to be stored
 eqtl <- data.frame(matrix(ncol = 5, nrow = 0))
@@ -97,6 +99,14 @@ for (file in file.names){
   # rename column names (so they match with the global eQTL df's names)
   names(data) <- eqtl.names
   
+  # convert all columns to proper class so bind_rows works
+  data <- data %>%
+    mutate(Gene = as.character(Gene),
+           SNP = as.character(SNP),
+           SNPChr = as.integer(SNPChr),
+           SNPPos = as.integer(SNPPos),
+           MetaP = as.numeric(MetaP))
+  
   # concatenate the file with the rest of eQTL files
   eqtl <- bind_rows(list(eqtl, data)) #bind_rows much faster than rbind
 
@@ -130,6 +140,12 @@ print(paste("number of eQTLs before filtering", length(gr.eqtl)))
 # create df to store all links
 all.links <- data.frame(matrix(nrow = 0, ncol = 4))
 names(all.links) <- c("gene", "peak", "resolution", "validated")
+# convert all columns to proper class so bind_rows works
+all.links <- all.links %>%
+  mutate(gene = as.character(gene),
+         peak = as.character(peak),
+         resolution = as.numeric(resolution),
+         validated = as.integer(validated))
 
 # set cluster resolutions to test
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
@@ -232,6 +248,13 @@ for (res in resolutions){
       tibble::add_column(resolution = res) %>% 
       dplyr::select(gene = grn.gene, peak = peak.ID, resolution, validated = link_validate) %>%
       distinct()
+    
+    # format links so it has the same classes as all.links
+    links <- links %>%
+      mutate(gene = as.character(gene),
+             peak = as.character(peak),
+             resolution = as.numeric(resolution),
+             validated = as.integer(validated))
     
     # add links data for this res to the global links df
     all.links <- bind_rows(all.links, links)  
