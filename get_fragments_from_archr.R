@@ -1,6 +1,6 @@
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#########################################
 # Get ATAC fragments from ArchR Project #
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#########################################
 
 # Install ArchR
 # devtools::install_github("GreenleafLab/ArchR", ref="master", repos = BiocManager::repositories())
@@ -8,6 +8,10 @@
 # Load libraries
 library("ArchR")
 library("qs")
+
+#%%%%%%%%%%%%#
+# TIMECOURSE #
+#%%%%%%%%%%%%#
 
 # Set ArchR Project directory
 archr_dir <- "/g/scb/zaugg/marttine/dariaMultiome/ArchR/timecourse/ArchRproject.qs"
@@ -33,3 +37,35 @@ write.table(x = fragments[[1]], file = "/g/scb/zaugg/deuner/SCENIC+/inputdata/ti
 # Sort them: sort -t$'\t' -k1 -k2 timecourse_fragments_translated_ordered3.tsv > timecourse_fragments_translated_ordered4.tsv
 # BED format: http://www.ensembl.org/info/website/upload/bed.html
 # Add "timecourse_": 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# COMBINED - NEURON, NPC, COCULTURED28 #
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+# Set datasets
+datasets <- c("Neuron", "NPC", "cocultured28")
+
+# get fragments for each dataset
+# iterate over them and execute the extraction
+for (dataset in datasets){
+  
+  print(dataset)
+
+  # Set ArchR Project directory
+  archr_dir <- paste0("/g/scb/zaugg/marttine/dariaMultiome/ArchR/", dataset, "/ArchRproject.qs")
+  
+  # Load ArchR Project
+  ArchRProj <- qread(archr_dir)
+  
+  # Get the fragments
+  fragments <- getFragmentsFromProject(
+    ArchRProj = ArchRProj,
+  )
+  
+  # Have a look at them
+  fragments[[1]]
+  
+  # Save them into a tsv file
+  write.table(x = fragments[[1]], file = paste0("/g/scb/zaugg/deuner/SCENIC+/inputdata/", dataset, "_fragments.tsv"), col.names=FALSE, row.names=FALSE, quote=FALSE, sep = "\t")
+  
+}
