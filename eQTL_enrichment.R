@@ -421,8 +421,8 @@ for (res in resolutions){
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
 write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/", dataset, "_", corr.method, "_", links.to.validate, "_eQTL_links.tsv"))
   
-# The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
-round(mean_or, digits = 3) 
-(round(min_or, digits = 3) - round(max_or, digits = 3))
+## The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
+#round(mean_or, digits = 3) 
+#(round(min_or, digits = 3) - round(max_or, digits = 3))
 
 
