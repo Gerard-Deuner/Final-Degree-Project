@@ -43,7 +43,8 @@ links <- read.csv(links.dir)
 
 # subset just useful columns 
 links <- links %>%
-  dplyr::select(gene, peak)
+  distinct %>% 
+  dplyr::select(gene, peak) 
 head(links)
 
 # convert gene symbols to ENSEMBL IDs
