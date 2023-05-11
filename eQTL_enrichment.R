@@ -121,10 +121,13 @@ eQTL.FDR <- 0.3
 # number of eQTLs before filtering
 print(paste("number of eQTLs before filtering", nrow(eqtl)))
 
-# remove gene ensembl versions from the ensembl id
-eqtl$Gene <- strsplit(eqtl$Gene, "[.]") %>%
-  map(1) %>%
-  unlist()
+# remove gene ensembl versions from the ensembl id 
+eqtl$Gene <- vapply(strsplit(eqtl$Gene,"[.]"), `[`, 1, FUN.VALUE=character(1))
+
+# eqtl$Gene <- strsplit(eqtl$Gene, "[.]") %>%
+#   map(1) %>%
+#   unlist()
+# strsplit(eqtl$Gene, "[.]") %>% map_dbl(1)
 
 # make a genomic ranges list of significant eQTLs
 gr.eqtl <- eqtl %>%
@@ -165,7 +168,9 @@ for (res in resolutions){
   
   if (nrow(grn) > 0){
     grn <- as.data.frame(grn)
-    names(grn)[5] <- "peak_gene.p_adj"
+    if (links.to.validate == "all") { 
+      names(grn)[5] <- "peak_gene.p_adj"
+    }
     
     # read genes and their positions from Ensembl:
     genes <- fread("/g/scb/zaugg/claringb/eQTL_overlap_GRN/input/ENSG_genes_biomart_GRCh38_20220519.txt")
@@ -421,8 +426,8 @@ for (res in resolutions){
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
 write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/", dataset, "_", corr.method, "_", links.to.validate, "_eQTL_links.tsv"))
   
-## The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
-#round(mean_or, digits = 3) 
-#(round(min_or, digits = 3) - round(max_or, digits = 3))
+# The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
+# round(mean_or, digits = 3) 
+# (round(min_or, digits = 3) - round(max_or, digits = 3))
 
 
