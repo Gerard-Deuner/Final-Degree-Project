@@ -164,6 +164,19 @@ tfplots <- ggarrange(tf1, tf2, nrow = 1, ncol = 2, common.legend = TRUE)
 tfplots
 ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", tfplots)
 
+# Check TFs
+val.TFs <- val.df %>% 
+  dplyr::filter(validation == "ChiP-seq", validated == 1) %>% 
+  distinct(gene, resolution, setting, .keep_all = TRUE) %>% 
+  group_by(setting, resolution)
+
+for (set in unique(val.df$setting)){
+  val.TFs %>%
+    dplyr::filter(setting == set) %>%
+    dplyr::select(resolution, gene) %>% 
+    print(n = 100)
+} 
+
 # TF-peak links recovery from ChiP-seq data
 tfp1 <- ggplot(val.df %>% 
                 dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
@@ -294,6 +307,44 @@ pg <- ggarrange(a, b, c, d, ncol = 2, nrow = 2, common.legend = TRUE, labels = "
 pg
 ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery.pdf", pg)
 
+# inspect res 18 of combined pearson nomicro
+val.df %>%
+  dplyr::filter(setting == "combined_pearson_nomicro") %>%
+  group_by(resolution) %>%
+  tally()
+
+# check GRN object
+grn18 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+grn18@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
+grn18@connections$all.filtered$`0` %>% nrow
+grn20 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+grn20@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
+grn20@connections$all.filtered$`0` %>% nrow
+
+# Check GRNs files
+GRN18 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+nrow(GRN18)
+GRN16 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes16_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+nrow(GRN16)
+GRN20 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+nrow(GRN20)
+# This is correct
+
+# Check pcHi-C validated links
+pchic <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro.csv")
+pchic <- dplyr::select(pchic, -V1)
+
+pchic %>%
+  group_by(resolution) %>%
+  tally()
+
+pchic2 <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro_all.csv")
+pchic2 <- dplyr::select(pchic2, -V1)
+
+pchic2 %>%
+  group_by(resolution) %>%
+  tally()
+# Problem is here - check pchic validation file
 
 # Peak - Gene validation from eQTL data
 
@@ -366,6 +417,82 @@ iv <- ggplot(val.df %>%
 pge <- ggarrange(i, ii, iii, iv, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
 pge
 ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery_eQTL.png", pge, device = "png")
+
+# validated links with pcHi-C and eQTL data show a similar pattern
+# check if links with pcHi-C data are the same as links validated with eQTL data
+pchic.links <- val.df %>%
+  dplyr::filter(validation == "pcHi-C", validated == 1, setting == "combined_spearman_nomicro") %>%
+  dplyr::select(gene, peak, resolution)
+
+eQTL.links <- val.df %>%
+  dplyr::filter(validation == "eQTL", validated == 1, setting == "combined_spearman_nomicro_all_eQTL_links") %>%
+  dplyr::select(gene, peak, resolution)
+
+pchic.links
+eQTL.links
+
+# convert gene names of pcHI-C links to ENSEMBL IDs to they match with the pcHi-C links
+require('biomaRt')
+mart <- useMart('ENSEMBL_MART_ENSEMBL')
+mart <- useDataset('hsapiens_gene_ensembl', mart)
+annotLookup <- getBM(
+  mart = mart,
+  attributes = c(
+    'hgnc_symbol',
+    'ensembl_gene_id',
+    'gene_biotype'),
+  uniqueRows = TRUE)
+colnames(annotLookup)[1:2] <- c("gene", "gene.ENSEMBL")
+pchic.links <- pchic.links %>% 
+  inner_join(annotLookup, by = "gene", multiple = "all") %>%
+  dplyr::select(-gene)
+names(pchic.links)[3] <- "gene" 
+
+# also change peak format ot eqtl's format (chr:start-end)
+pchic.links[,c("chr", "cords")] <- str_split_fixed(pchic.links$peak, "-", 2)
+
+eQTL.links[,c("chr", "cords")] <- str_split_fixed(eQTL.links$peak, ":", 2)
+
+# compute how many of them are shared
+intersection <- inner_join(pchic.links, eQTL.links, by = c("gene", "chr", "cords", "resolution")) 
+nrow(intersection) # quite a lot are shared
+
+# intersection by resolution
+int.df <- intersection %>%
+  group_by(resolution) %>%
+  tally
+
+# add column of total links summing the pchic and eqtl links to see the difference
+tot.pchic <- val.df %>%
+  dplyr::filter(validated == 1, validation == "pcHi-C", setting == "combined_spearman_nomicro") %>%
+  group_by(resolution) %>%
+  tally() %>%
+  pull(n)
+
+tot.eqtl <- val.df %>%
+  dplyr::filter(validated == 1, validation == "eQTL", setting == "combined_spearman_nomicro_all_eQTL_links") %>%
+  group_by(resolution) %>%
+  tally() %>%
+  pull(n)
+
+total.links <- tot.pchic + tot.eqtl
+
+int.df$all <- total.links
+
+names(int.df)[2] <- "shared"
+
+int.df <- int.df %>%
+  pivot_longer(c(shared, all), names_to = "type", values_to = "value")
+
+
+
+# plot it 
+ggplot(int.df, aes(x = resolution, y = value, group = type, fill = forcats::fct_rev(type))) + 
+  geom_bar(stat = "identity", position =  "stack") + 
+  labs(x = "Resolution", y = "Validated peak-gene links", fill = "type") + 
+  theme_bw() + 
+  scale_fill_manual(values = c("pink", "darkgrey"))
+
 
 
 #############################
@@ -532,6 +659,14 @@ tfp <- ggarrange(tfp1, tfp3, tfp4, ncol = 2, nrow = 2, common.legend = TRUE, lab
 tfp
 ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery_filtered.pdf", pg)
 
+# Check TFs
+val.df %>%                 
+  dplyr::filter(validation == "ChiP-seq",
+                validated == 1,
+                setting == "combined_spearman_nomicro_filtered") %>% 
+  distinct() %>% 
+  pull(gene) %>%
+  unique()
 
 # Peak-Gene links recovery from pcHi-C
 a <- ggplot(val.df %>%                 
