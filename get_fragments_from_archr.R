@@ -34,9 +34,10 @@ write.table(x = fragments[[1]], file = "/g/scb/zaugg/deuner/SCENIC+/inputdata/ti
 # Then convert the strand column from "*" to "+" by; sed 's/\*/+/g' timecourse_fragments.tsv > timecourse_fragments_translated.csv
 # Reorder the columns by: awk '{ print $1"\t"$2"\t"$3"\t"$6"\t"$4"\t"$5 }' timecourse_fragments_translated.csv > timecourse_fragments_translated_ordered.tsv
 # Change "#" for "_": sed 's/\#/_/g' timecourse_fragments_translated_ordered.tsv > timecourse_fragments_translated_ordered2.tsv
-# Sort them: sort -t$'\t' -k1 -k2 timecourse_fragments_translated_ordered3.tsv > timecourse_fragments_translated_ordered4.tsv
+# Sort them: sort -t$'\t' -k1,1 -k2,2n -k3,3n timecourse_fragments_translated_ordered2.tsv > timecourse_fragments_translated_ordered3.tsv
 # BED format: http://www.ensembl.org/info/website/upload/bed.html
-# Add "timecourse_": 
+# Remove "timecourse_": awk '{ gsub(/timecourse_/,"", $4); print } ' timecourse_fragments_translated_ordered3.tsv > timecourse_fragments_translated_ordered4.tsv
+# Set tab as column delimiter: sed 's/,/:/g' timecourse_fragments_translated_ordered4.tsv > timecourse_fragments_translated_ordered5.tsv
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 # COMBINED - NEURON, NPC, COCULTURED28 #
