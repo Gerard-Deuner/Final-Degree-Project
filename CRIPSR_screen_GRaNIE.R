@@ -10,59 +10,57 @@ library(dplyr)
 library(tidyr)
 library(GRaNIE)
 library(Signac)
+library(data.table)
+library(stringr)
 
-# #Set directory and cell type
-# dir <- "/g/scb/zaugg/claringb/scz_CRISPR_screen/NGN2_NPC/scifi-RNA/output/processing_by_Mikael_Umut/"
-# 
-# ## Combine seurat objects
-# #Read Seurat objects
-# npc <- qread(paste0(dir, "/6.Aligned/NPC/NPCseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
-# neur <- qread(paste0(dir, "/6.Aligned/Neuron/neuronseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
-# 
-# #Clear metadata for a cleaner output
-# columns.to.remove <- c("leidenSub0.4", "leidenSub0.6", "leidenSub0.8", "leidenSub1.0",
-#                        "leidenSub1.4", "leidenSub1.6", "umap1", "umap2")
-# 
-# for(i in columns.to.remove) {
-#   npc[[i]] <- NULL
-#   neur[[i]] <- NULL
-# }
-# 
-# #Combine into one seurat object
-# seur.rna <- merge(npc, y = neur, add.cell.ids = c("NPC", "Neuron"))
-# 
-# #Add ATAC data
-# peaks <- readMM("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/atac.counts.mtx.gz")
-# rownames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/peaks.atac.csv.gz")$x
-# colnames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/cell.atac.csv.gz")$id
-# 
-# ## create a seurat object
-# seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC')
-# 
-# #Combine rna and atac seurat object
-# seur <- merge(seur.rna, seur.atac, merge.data = TRUE) # bad alloc - run on cluster
-# 
-# #Save seurat object
-# qsave(seur, "/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
+# load cluster embedding for each cell and modalities
+emb <- fread("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/iterations/embeddingsAndLeidenClusters.csv")
+rownames(emb) <- emb$V1
+head(emb)
 
-#Read seurat object
-seur <- qread("/g/scb/zaugg/deuner/GRaNIE/tmp/npc_neuron.seuratObject.qs")
+#Set directory and cell type
+dir <- "/g/scb/zaugg/claringb/scz_CRISPR_screen/NGN2_NPC/scifi-RNA/output/processing_by_Mikael_Umut/"
 
-DefaultAssay(seur) <- "RNA"
+## Combine seurat objects
+#Read Seurat objects
+npc <- qread(paste0(dir, "/6.Aligned/NPC/NPCseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
+neur <- qread(paste0(dir, "/6.Aligned/Neuron/neuronseuratObject.filtered.SCTransformed.clustered.co-embedding.qs"))
 
-# check if there are empty cells
-seur@meta.data$nCount_RNA %>% is.na %>% table
-seur@meta.data$nCount_ATAC %>% is.na %>% table
+#Clear metadata for a cleaner output
+columns.to.remove <- c("leidenSub0.4", "leidenSub0.6", "leidenSub0.8", "leidenSub1.0",
+                       "leidenSub1.4", "leidenSub1.6", "umap1", "umap2")
 
-# Filter out empty cells
-seur$isna.rna <- is.na(seur@meta.data$nCount_RNA)
-seur <- subset(seur, subset = isna.rna == FALSE)
-seur$isna.atac <- is.na(seur@meta.data$nCount_ATAC)
-seur <- subset(seur, subset = isna.atac == FALSE)
+for(i in columns.to.remove) {
+  npc[[i]] <- NULL
+  neur[[i]] <- NULL
+}
 
-# check if empty cells were removed correctly
-seur@meta.data$nCount_RNA %>% is.na %>% table
-seur@meta.data$nCount_ATAC %>% is.na %>% table
+#Combine into one seurat object
+seur.rna <- merge(npc, y = neur, add.cell.ids = c("NPC", "Neuron"))
+
+#Get ATAC data
+peaks <- readMM("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/atac.counts.mtx.gz")
+rownames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/peaks.atac.csv.gz")$x
+colnames(peaks) <- read.csv("/g/scb/zaugg/marttine/RNA_ATAC_integration/CRISPR/input/cell.atac.csv.gz")$id
+
+# Create seurat object for ATAC 
+seur.atac <- CreateSeuratObject(counts = peaks, assay = 'ATAC', project = 'CRISPR')
+
+# Add metadata to seurat objects
+
+seur.atac <- seur.atac %>%d
+  AddMetaData(emb %>% dplyr::filter(modality == "ATAC"))
+
+# adapt cell names of metadata so they match the seur.rna cell names (in seur.rna sample name is uppercased and in metadata it is lowercased)
+new.names <- emb %>% 
+  dplyr::filter(modality == "RNA") %>% 
+  pull(V1) %>% str_split_fixed("_", 2)
+new.names <- str_c(toupper(new.names[,1]), "_", new.names[,2])
+  
+
+seur.rna <- seur.rna %>%
+  AddMetaData(emb %>% dplyr::filter(modality == "RNA", V1 %in% rownames(seur.rna@meta.data))) 
+
 
 ## Run scGRaNIE
 # Set up source of helper functions
@@ -100,3 +98,400 @@ GRN = runGRaNIE(
   nCores = 8,
   runNetworkAnalyses = TRUE,
   correlation.method = "spearman")
+
+
+
+# Prepare Data function from separate modalities
+prepareSepModalitiesData_GRaNIE <- function(rna.seur, atac.seur,
+                                     outputDir = "pseudobulk", saveSeuratObject = TRUE,
+                                     file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
+                                     assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
+                                     prepareData = TRUE, SCT_nDimensions = 50,  dimensionsToIgnore_LSI_ATAC = 1,
+                                     pseudobulk_source = "cluster",
+                                     clusteringAlgorithm = 3, clusterResolutions = c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)), 
+                                     doDimPlots = TRUE,
+                                     run_MultiK = FALSE,
+                                     forceRerun = FALSE
+) {
+  
+  start = Sys.time()
+  
+  checkmate::assertClass(seu.s, "Seurat")
+  checkmate::assertSubset(c(assayName_RNA, assayName_ATAC), names(seu.s@assays))
+  checkmate::assertFlag(prepareData)
+  checkmate::assertFileExists(file_RNA_features, access = "r")
+  checkmate::assertSubset(pseudobulk_source, c("cluster", colnames(seu.s@meta.data)))
+  
+  checkmate::assertFlag(saveSeuratObject)
+  checkmate::assertFlag(run_MultiK)
+  checkmate::assertSubset(clusteringAlgorithm, c(1:4), empty.ok = FALSE)
+  checkmate::assertIntegerish(clusteringAlgorithm, len = 1)
+  checkmate::assertFlag(doDimPlots)
+  checkmate::assertIntegerish(SCT_nDimensions, lower = 5, upper = 500)
+  checkmate::assertIntegerish(dimensionsToIgnore_LSI_ATAC, lower = 0, upper = SCT_nDimensions - 1)
+  checkmate::assertFlag(forceRerun)
+  
+  if (!dir.exists(outputDir)) {
+    dir.create(outputDir)
+  }
+  
+  GRaNIE:::.startLogger(paste0(outputDir, "/prepareData_Seurat_GRaNIE.R.log") , "INFO",  removeOldLog = FALSE)
+  
+  if (saveSeuratObject & !GRaNIE:::is.installed("qs")) {
+    stop("Package qs is not installed but needed due to saveSeuratObject = TRUE")
+  }
+  
+  if (saveSeuratObject) {
+    # TODO check whether qs is installed
+  }
+  
+  
+  
+  # Currently hard-coded options
+  # See SCT transform
+  returnOnlyVarGenes = FALSE
+  
+  # Needed to retrieve ENSEMBL IDs for gene names
+  if (!is.null(file_RNA_features)) {
+    futile.logger::flog.info(paste0("Reading and checking the RNA features file."))
+    
+    features = readr::read_tsv(file_RNA_features, col_names = FALSE, col_types = "ccffii")
+    colnames(features) = c("ens_id", "gene", "view", "chr", "start", "end")
+    
+  }
+  
+  
+  
+  if (prepareData) {
+    
+    futile.logger::flog.info(paste0("Preparing RNA and ATAC data (RNA: SCTransform, PCA, UMPA; ATAC: TFID, FindTopFeatures, SVD, UMAP; combined: FindMultiModalNeighbors, UMAP). This may take a while."))
+    
+    Seurat::DefaultAssay(seu.s) <- assayName_RNA
+    
+    dimToUseRNA = seq_len(SCT_nDimensions)
+    
+    # Please note that this matrix is non-sparse, and can therefore take up a lot of memory if stored for all genes. 
+    # To save memory, we store these values only for variable genes, by setting the return.only.var.genes = TRUE by default in the SCTransform() function call.
+    seu.s <- Seurat::SCTransform(seu.s, verbose = FALSE, return.only.var.genes = returnOnlyVarGenes) %>% 
+      Seurat::RunPCA() %>% 
+      Seurat::RunUMAP(dims = dimToUseRNA, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
+    
+    
+    Seurat::DefaultAssay(seu.s) <- assayName_ATAC
+    seu.s <- Signac::RunTFIDF(seu.s)
+    seu.s <- Signac::FindTopFeatures(seu.s, min.cutoff = 'q0')
+    seu.s <- Signac::RunSVD(seu.s)
+    
+    
+    dimToUse_ATAC = setdiff(1:SCT_nDimensions, dimensionsToIgnore_LSI_ATAC)
+    
+    seu.s <- Seurat::RunUMAP(seu.s, reduction = 'lsi', dims = dimToUse_ATAC, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+    
+    # We calculate a WNN graph, representing a weighted combination of RNA and ATAC-seq modalities. We use this graph for UMAP visualization and clustering
+    seu.s <- Seurat::FindMultiModalNeighbors(seu.s, reduction.list = list("pca", "lsi"), dims.list = list(dimToUseRNA, dimToUse_ATAC),
+                                             weighted.nn.name = "weighted.nn",
+                                             knn.graph.name = "wknn",
+                                             snn.graph.name = "wsnn")
+    
+    seu.s <- Seurat::RunUMAP(seu.s, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+    
+    
+  } # end if prepareData
+  
+  # Currently the only opton that works. Count aggregation
+  sumCounts  = TRUE
+  aggregationType = dplyr::if_else(sumCounts == TRUE, "", "_mean")
+  
+  if (pseudobulk_source == "cluster") {
+    
+    futile.logger::flog.info(paste0("Running clustering for the following resolutions: ", paste0(clusterResolutions, collapse = ", "), ". This may take a while."))
+    
+    for (clusterResolution in unique(clusterResolutions)) {
+      
+      file_in_rna  = paste0(outputDir, "/rna.pseudobulkFromClusters_res", clusterResolution, aggregationType, ".tsv.gz")
+      file_in_atac = paste0(outputDir, "/atac.pseudobulkFromClusters_res", clusterResolution, aggregationType, ".tsv.gz")
+      
+      if (file.exists(file_in_rna) & file.exists(file_in_atac) & !forceRerun) {
+        futile.logger::flog.info(paste0(" Files ", file_in_rna, " and ", file_in_atac, " already found, not overwriting due to forceRerun = TRUE. Returning Seurat object before clustering."))
+        return(seu.s)
+      }
+      futile.logger::flog.info(paste0(" Resolution ", clusterResolution))
+      
+      seu.s <- Seurat::FindClusters(seu.s, graph.name = "wsnn", 
+                                    resolution = clusterResolution,
+                                    algorithm = clusteringAlgorithm, verbose = FALSE)
+      
+      clusterColName = paste0("wsnn_res.", clusterResolution)
+      Seurat::Idents(seu.s) = clusterColName
+      seu.s@meta.data[[clusterColName]] = paste0("cluster", seu.s@meta.data[[clusterColName]])
+      seu.s@meta.data$seurat_clusters = paste0("cluster", seu.s@meta.data$seurat_clusters)
+      
+      if (doDimPlots) {
+        pdfFile = paste0(outputDir, "/dimPlot_combined_clusterResolution", clusterResolution, ".pdf")
+        .doDimPlots(seu.s, groupBy = "seurat_clusters", pdfFile = pdfFile)
+      }
+      
+      file_metadata = paste0(outputDir, "/metadata_res", clusterResolution, ".tsv.gz")
+      .writeMetadata(seu.s, file_metadata)
+      
+      
+      ### Count aggregation
+      futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
+      rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = clusterColName, sumCounts = sumCounts, ID_column = "gene")
+      
+      # rna.before = GetAssayData(object = seu.s, assay = "RNA", slot = "counts")
+      # rna.before2 = GetAssayData(object = seu.s, assay = "RNA", slot = "data")
+      # rna.before3 = GetAssayData(object = seu.s, assay = "RNA", slot = "scale.data")
+      # 
+      # # Sanity check
+      # for (i in 1:10) {
+      #   stopifnot(identical(sum(rna.before[i,]), sum(rna.pseudobulk$RNA[i,]))) 
+      # }
+      
+      # Merge with the actual features and their correct mappings.
+      rna.pseudobulk.clean = .addEnsemblIDs(rna.pseudobulk.clean, mapping = features)
+      
+      futile.logger::flog.info(paste0(" Writing RNA counts to file ", file_in_rna))
+      readr::write_tsv(rna.pseudobulk.clean, file_in_rna)
+      
+      .printScarcity(rna.pseudobulk.clean, type = "RNA")
+      
+      ########
+      # ATAC #
+      ########
+      
+      futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
+      atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = clusterColName, sumCounts = sumCounts, ID_column = "peakID")
+      
+      
+      # Replace the first hyphen with a colon
+      atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
+      
+      futile.logger::flog.info(paste0(" Writing ATAC counts to file ", file_in_atac))
+      readr::write_tsv(atac.pseudobulk.clean, file_in_atac)
+      
+      .printScarcity(atac.pseudobulk.clean, type = "ATAC")
+      
+      
+    } # end for (clusterResolution in clusterResolutions)
+    
+    if (run_MultiK) {
+      
+      futile.logger::flog.info(paste0(" Run MultiK"))
+      
+      #TODO check whether MultiK is installed
+      multik <- MultiK::MultiK(seu.s, reps = 10)
+      MultiK::DiagMultiKPlot(multik$k, multik$consensus)
+      bestk = 3
+      # CLustering
+      clusters <- MultiK::getClusters(seu.s, bestk)
+      # Run SigClust at optimal K level:
+      pval <- MultiK::CalcSigClust(seu.s, clusters$clusters)
+      # Make diagnostic plots (this includes a dendrogram of cluster centroids with the pairwise SigClust p values mapped on the nodes, 
+      # and a heatmap of the pairwise SigClust p values)
+      MultiK::PlotSigClust(seu.s, clusters$clusters, pval)
+    }
+    
+    
+    
+  }  # end if (pseudobulk_source == "cluster")
+  else {
+    
+    futile.logger::flog.info(paste0("Creating pseudobulk based on the following pre-existing cell identity column: ", pseudobulk_source))
+    
+    file_in_rna  = paste0(outputDir, "/rna.pseudobulkFromClusters_" , pseudobulk_source, aggregationType, ".tsv.gz")
+    file_in_atac = paste0(outputDir, "/atac.pseudobulkFromClusters_", pseudobulk_source, aggregationType, ".tsv.gz")
+    
+    if (file.exists(file_in_rna) & file.exists(file_in_atac)) {
+      seu.s
+    }
+    
+    # Normalize levels and make the names compatible
+    seu.s@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.s@meta.data[[pseudobulk_source]])
+    seu.s@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.s@meta.data[[pseudobulk_source]])
+    
+    Seurat::Idents(seu.s) =  pseudobulk_source
+    
+    if (doDimPlots) {
+      pdfFile = paste0(outputDir, "/dimPlot_combined_", pseudobulk_source, ".pdf")
+      .doDimPlots(seu.s, groupBy = pseudobulk_source, pdfFile = pdfFile)
+    }
+    
+    file_metadata = paste0(outputDir, "/metadata_", pseudobulk_source, ".tsv.gz")
+    .writeMetadata(seu.s, file_metadata)
+    
+    
+    # RNA #
+    futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
+    rna.pseudobulk.clean = .aggregateCounts(seu.s, assayName_RNA, groupBy = pseudobulk_source, ID_column = "gene", sumCounts = sumCounts)
+    
+    # Merge with the actual features and their correct mappings.
+    rna.pseudobulk.clean2 = .addEnsemblIDs(rna.pseudobulk.clean, mapping = features)
+    
+    futile.logger::flog.info(paste0(" Writing RNA counts to file ", file_in_rna))
+    readr::write_tsv(rna.pseudobulk.clean2, file_in_rna)
+    
+    .printScarcity(rna.pseudobulk.clean2, type = "RNA")
+    
+    
+    # ATAC #
+    futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
+    atac.pseudobulk.clean = .aggregateCounts(seu.s, assayName_ATAC, groupBy = pseudobulk_source, sumCounts = sumCounts, ID_column = "peakID")
+    
+    # Replace the first hyphen with a colon
+    atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
+    
+    futile.logger::flog.info(paste0(" Writing ATAC counts to file ", file_in_atac))
+    readr::write_tsv(atac.pseudobulk.clean, file_in_atac)
+    
+    .printScarcity(atac.pseudobulk.clean, type = "ATAC")
+    
+  }
+  
+  
+  if (saveSeuratObject) {
+    
+    file_seurat = paste0(outputDir, "/seuratObject.qs")
+    qs::qsave(seu.s,  file_seurat)
+    
+  } 
+  
+  GRaNIE:::.printExecutionTime(start, prefix = "") 
+  futile.logger::flog.info(paste0("Finished successfully, all output files have been saved in ", outputDir, ". Returning the Seurat object. Happy GRaNIE'ing!"))
+  
+  seu.s
+}
+
+#' @import ggplot2
+.doDimPlots <- function(seu.s, groupBy = "seurat_clusters", pdfFile) {
+  
+  
+  if (!is.null(pdfFile)) {
+    futile.logger::flog.info(paste0(" Writing DimPlot to file ", pdfFile))
+    grDevices::pdf(pdfFile, width = 15, height = 10)
+  }
+  
+  p1 <- Seurat::DimPlot(seu.s, reduction = "umap.rna", group.by = groupBy, label = TRUE, label.size = 2.5, repel = TRUE)  + ggtitle("RNA")
+  p2 <- Seurat::DimPlot(seu.s, reduction = "umap.atac", group.by = groupBy, label = TRUE, label.size = 2.5, repel = TRUE) + ggtitle("ATAC")
+  p3 <- Seurat::DimPlot(seu.s, reduction = "wnn.umap", group.by = groupBy, label = TRUE, label.size = 2.5, repel = TRUE)  + ggtitle("WNN")
+  plot(p1 + p2 + p3 & Seurat::NoLegend() & theme(plot.title = element_text(hjust = 0.5)))
+  
+  if (!is.null(pdfFile)) {
+    grDevices::dev.off()
+  }
+  
+  
+}
+
+.writeMetadata <- function(seu.s, file_metadata) {
+  
+  nClusters = levels(seu.s)
+  futile.logger::flog.info(paste0(" Number of clusters found: ",  length(nClusters)))
+  
+  futile.logger::flog.info(paste0(" Cells per cluster: "), table(Seurat::Idents(seu.s)), capture = TRUE)
+  
+  metadata = tibble::tibble(sampleName = levels(seu.s), 
+                            nCells = table(Seurat::Idents(seu.s)) %>% as.vector())
+  
+  
+  futile.logger::flog.info(paste0(" Writing metadata to file ", file_metadata))
+  readr::write_tsv(metadata, file_metadata)
+}
+
+.aggregateCounts <- function(seu.s, assayName, groupBy = "ident", sumCounts = TRUE, slotName = "counts", ID_column = "peakID") {
+  
+  checkmate::assertSubset(slotName, c("scale.data", "counts", "data"))
+  
+  if (sumCounts) {
+    
+    pseudobulk = Seurat::AggregateExpression(
+      seu.s,
+      assays = assayName,
+      features = NULL,
+      return.seurat = FALSE,
+      group.by = groupBy,
+      add.ident = NULL,
+      slot =  slotName, # If slot is set to 'data', this function assumes that the data has been log normalized and therefore feature values are exponentiated prior to aggregating so that sum is done in non-log space. Otherwise, if slot is set to either 'counts' or 'scale.data', no exponentiation is performed prior to aggregating
+    ) 
+    
+  } else {
+    
+    # seu.s[["SCT"]]@scale.data contains the residuals (normalized values), and is used directly as input to PCA. 
+    # The ‘corrected’ UMI counts are stored in seu.s[["SCT"]]@counts
+    # We store log-normalized versions of these corrected counts in seu.s[["SCT"]]@data
+    
+    # assayRNA = "SCT"
+    
+    # The residuals for this model are normalized values, and can be positive or negative. 
+    # Positive residuals for a given gene in a given cell indicate that we observed more UMIs than expected given the gene’s average expression 
+    # in the population and cellular sequencing depth, while negative residuals indicate the converse.
+    
+    # Take the mean of the normalized values per cluster
+    pseudobulk = Seurat::AverageExpression(
+      seu.s,
+      assays = assayName,
+      features = NULL,
+      return.seurat = FALSE,
+      group.by = groupBy,
+      add.ident = NULL,
+      slot = "counts", # If slot is set to 'data', this function assumes that the data has been log normalized and therefore feature values are exponentiated prior to aggregating so that sum is done in non-log space. Otherwise, if slot is set to either 'counts' or 'scale.data', no exponentiation is performed prior to aggregating
+    ) 
+    
+  }
+  
+  # atac.before = GetAssayData(object = seu.s, assay = "ATAC", slot = "counts")
+  # atac.before2 = GetAssayData(object = seu.s, assay = "ATAC", slot = "data")
+  # atac.before3 = GetAssayData(object = seu.s, assay = "ATAC", slot = "scale.data")
+  # 
+  # # Sanity check
+  # for (i in 1:10) {
+  #   stopifnot(identical(sum(atac.before[i,]), sum(atac.pseudobulk$ATAC[i,]))) 
+  # }
+  
+  # Prepare data for GRN format
+  pseudobulk[[assayName]] %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(ID_column) %>%
+    tibble::as_tibble() 
+  
+  
+}
+
+
+.addEnsemblIDs <- function(rna.pseudobulk.clean, mapping) {
+  
+  futile.logger::flog.info(paste0(" Mapping gene names to Ensembl IDs using the provided features file..."))
+  rna.pseudobulk.clean = dplyr::left_join(rna.pseudobulk.clean, mapping, by = "gene")
+  
+  rna.pseudobulk.clean.filt =  dplyr::filter(rna.pseudobulk.clean, !is.na(.data$ens_id))
+  nRows_missing = nrow(rna.pseudobulk.clean) - nrow(rna.pseudobulk.clean.filt)
+  genesNA = rna.pseudobulk.clean$gene[which(!rna.pseudobulk.clean$gene %in% rna.pseudobulk.clean.filt$gene)]
+  futile.logger::flog.info(paste0(" Deleted the following ", nRows_missing, " rows because no Ensembl ID could be found: ", paste0(genesNA, collapse = ", ")))
+  
+  # Check ambiguities for gene names, some gene names may be ambiguous
+  geneNameFreq = table(rna.pseudobulk.clean.filt$gene)
+  genesDelete = names(which(geneNameFreq > 1))
+  
+  futile.logger::flog.info(paste0(" Deleted the following ", length(genesDelete), " genes because the gene name was not unique and appeared multiple times: ", paste0(genesDelete, collapse = ",")))
+  
+  rna.pseudobulk.clean = dplyr::filter(rna.pseudobulk.clean.filt, !.data$gene %in% genesDelete) %>%
+    dplyr::select("ens_id", tidyselect::everything(), -"view", -"chr", -"start", -"end", -"gene") %>%
+    dplyr::rename(ENSEMBL = "ens_id")
+  
+  rna.pseudobulk.clean
+  
+}
+
+.printScarcity <- function(pseudobulk, type = "RNA") {
+  
+  checkmate::assertSubset(type, c("RNA", "ATAC"))
+  colname = dplyr::if_else(type == "RNA", "ENSEMBL", "peakID")
+  
+  pseudobulk.m = pseudobulk %>%
+    tibble::column_to_rownames(colname) %>%
+    as.matrix()
+  
+  spasity_fraction = (length(pseudobulk.m) - Matrix::nnzero(pseudobulk.m)) / length(pseudobulk.m)
+  
+  futile.logger::flog.info(paste0(" Sparsity ", type, ": ",  spasity_fraction))
+}
