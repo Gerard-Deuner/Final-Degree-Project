@@ -83,7 +83,7 @@ file_RNA_features = paste0("/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCe
 seurat_outputFolder = paste0(path,"/outputdata/", "NPC_Neuron_leiden1.2")
 
 # Prepare data
-seur = prepareSeuratData_GRaNIE(seur, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
+seur = prepareDataSepModalities_GRaNIE(seur.rna, seur.atac, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
                                  file_RNA_features = file_RNA_features,
                                  prepareData = TRUE,
                                  saveSeuratObject = TRUE)
@@ -103,7 +103,7 @@ GRN = runGRaNIE(
 
 
 # Prepare Data function from separate modalities
-prepareSepModalitiesData_GRaNIE <- function(seur.rna, seur.rna,
+prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.rna,
                                      outputDir = "pseudobulk", saveSeuratObject = TRUE,
                                      file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
                                      assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
