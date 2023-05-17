@@ -13,6 +13,7 @@ library(SummarizedExperiment)
 library(factoextra)
 library(pheatmap)
 library(readxl)
+library(dplyr)
 
 # Set data directory
 dir <- "/g/scb/zaugg/deuner/GRaNPA/inputdata/"
@@ -68,3 +69,66 @@ fviz_pca_ind(PCA, addEllipses = F,
 pheatmap(log2(assays(se)$TMM + 1),
          show_rownames = FALSE, 
          annotation_col = as.data.frame(colData(se)))
+
+# Create design matrix and contrast matrix of iPSCs (day 0) vs mature neurons (day 4)
+d0d4_se <- se[,se$day %in% c(0, 4)]
+day <- as.factor(d0d4_se$day)
+design <- model.matrix(~0 + day)
+#colnames(design)[1:2] <- levels(day)
+head(design)
+
+contrast <- makeContrasts(
+  day4 - day0,
+  levels = colnames(design)
+)
+contrast
+
+# Remove mean-variance relationship from count data
+y <- voom(dgl[, dgl$samples$day %in% c(0,4)], design, plot = TRUE)
+
+
+# Fit linear models for all pairwise comparisons
+fit <- lmFit(y, design)
+fit <- contrasts.fit(fit, contrast)
+fit <- eBayes(fit)
+
+# Examine number of Differentially Expressed genes
+results <- topTable(fit, sort.by = "logFC", n = Inf) # Get all results, ordered by P-value
+head(results)
+
+results.5fdr <-  subset(results, adj.P.Val < 0.05) 
+nrow(results.5fdr)
+
+# Compare the number of differentially (up and down) expressed genes
+dt <- decideTests(fit, adjust.method = "fdr", p.value = 0.05)
+summary(dt)
+
+# glMD Plot
+#glMDPlot(fit, status = dt, side.main="ENSEMBL", counts = log2(assays(se)$TMM+1), groups = se$day)
+
+# Volcano Plot
+dgl$samples$group <- dgl$samples$day  # Allows coloring by cohort
+glimmaVolcano(fit, dge = dgl) 
+
+# load gene ENSEMBL annotations
+require('biomaRt')
+mart <- useMart('ENSEMBL_MART_ENSEMBL')
+mart <- useDataset('hsapiens_gene_ensembl', mart)
+annotLookup <- getBM(
+  mart = mart,
+  attributes = c(
+    'hgnc_symbol',
+    'ensembl_gene_id',
+    'gene_biotype'),
+  uniqueRows = TRUE)
+colnames(annotLookup)[1:2] <- c("gene", "gene.ENSEMBL") 
+
+# Generate DE dataframe to give as input to GRaNPA
+DE <- results %>%
+  dplyr::select(logFC, adj.P.Val) %>%
+  mutate(gene = rownames(results)) %>%
+  dplyr::rename(padj = adj.P.Val) %>%
+  inner_join(annotLookup, by = "gene", multiple = "all")
+
+nrow(results)
+nrow(DE)
