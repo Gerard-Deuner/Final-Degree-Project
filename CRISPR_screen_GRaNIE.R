@@ -82,55 +82,36 @@ file_RNA_features = paste0("/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCe
 # Path to the output directory
 seurat_outputFolder = paste0(path,"/outputdata/", "NPC_Neuron_leiden1.2")
 
-# Prepare data
-seur = prepareDataSepModalities_GRaNIE(seur.rna, seur.atac, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
-                                 file_RNA_features = file_RNA_features,
-                                 prepareData = TRUE,
-                                 saveSeuratObject = TRUE)
-
-# runGRaNIE for the specified metadata column
-GRN = runGRaNIE(
-  datasetName = "CRISPR_NPC_Neuron_Dataset",
-  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_leidenSub1.2_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"),
-  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
-  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
-  file_metadata = paste0(seurat_outputFolder,"/metadata_leidenSub1.2.tsv.gz"),
-  genomeAssembly = "hg38",
-  nCores = 8,
-  runNetworkAnalyses = TRUE,
-  correlation.method = "spearman")
-
-
-
 # Prepare Data function from separate modalities
-prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.atac,
-                                     outputDir = "pseudobulk", saveSeuratObject = TRUE,
-                                     file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
-                                     assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
-                                     prepareData = TRUE, SCT_nDimensions = 50,  dimensionsToIgnore_LSI_ATAC = 1,
-                                     pseudobulk_source = "cluster",
-                                     clusteringAlgorithm = 3, clusterResolutions = c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)), 
-                                     doDimPlots = TRUE,
-                                     run_MultiK = FALSE,
-                                     forceRerun = FALSE
+prepareDataSepModalities_GRaNIE <- function(seu.rna, seu.atac,
+                                            outputDir = "pseudobulk", saveSeuratObject = TRUE,
+                                            file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
+                                            assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
+                                            prepareData = TRUE, SCT_nDimensions = 50,  dimensionsToIgnore_LSI_ATAC = 1,
+                                            pseudobulk_source = "cluster",
+                                            clusteringAlgorithm = 3, clusterResolutions = c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)), 
+                                            doDimPlots = TRUE,
+                                            run_MultiK = FALSE,
+                                            forceRerun = FALSE
 ) {
   
   start = Sys.time()
   
-  # checkmate::assertClass(seu.s, "Seurat")
+  checkmate::assertClass(seur.rna, "Seurat")
+  checkmate::assertClass(seur.atac, "Seurat")
   # checkmate::assertSubset(c(assayName_RNA, assayName_ATAC), names(seu.s@assays))
-  # checkmate::assertFlag(prepareData)
-  # checkmate::assertFileExists(file_RNA_features, access = "r")
-  # checkmate::assertSubset(pseudobulk_source, c("cluster", colnames(seu.s@meta.data)))
-  # 
-  # checkmate::assertFlag(saveSeuratObject)
-  # checkmate::assertFlag(run_MultiK)
-  # checkmate::assertSubset(clusteringAlgorithm, c(1:4), empty.ok = FALSE)
-  # checkmate::assertIntegerish(clusteringAlgorithm, len = 1)
-  # checkmate::assertFlag(doDimPlots)
-  # checkmate::assertIntegerish(SCT_nDimensions, lower = 5, upper = 500)
-  # checkmate::assertIntegerish(dimensionsToIgnore_LSI_ATAC, lower = 0, upper = SCT_nDimensions - 1)
-  # checkmate::assertFlag(forceRerun)
+  checkmate::assertFlag(prepareData)
+  checkmate::assertFileExists(file_RNA_features, access = "r")
+  checkmate::assertSubset(pseudobulk_source, c("cluster", colnames(seu.rna@meta.data)))
+  checkmate::assertSubset(pseudobulk_source, c("cluster", colnames(seu.atac@meta.data)))
+  checkmate::assertFlag(saveSeuratObject)
+  checkmate::assertFlag(run_MultiK)
+  checkmate::assertSubset(clusteringAlgorithm, c(1:4), empty.ok = FALSE)
+  checkmate::assertIntegerish(clusteringAlgorithm, len = 1)
+  checkmate::assertFlag(doDimPlots)
+  checkmate::assertIntegerish(SCT_nDimensions, lower = 5, upper = 500)
+  checkmate::assertIntegerish(dimensionsToIgnore_LSI_ATAC, lower = 0, upper = SCT_nDimensions - 1)
+  checkmate::assertFlag(forceRerun)
   
   if (!dir.exists(outputDir)) {
     dir.create(outputDir)
@@ -173,20 +154,20 @@ prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.atac,
     
     # Please note that this matrix is non-sparse, and can therefore take up a lot of memory if stored for all genes. 
     # To save memory, we store these values only for variable genes, by setting the return.only.var.genes = TRUE by default in the SCTransform() function call.
-    seu.s <- Seurat::SCTransform(seu.rna, verbose = FALSE, return.only.var.genes = returnOnlyVarGenes) %>% 
+    seu.rna <- Seurat::SCTransform(seu.rna, verbose = FALSE, return.only.var.genes = returnOnlyVarGenes) %>% 
       Seurat::RunPCA() %>% 
       Seurat::RunUMAP(dims = dimToUseRNA, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
     
     
     Seurat::DefaultAssay(seu.atac) <- assayName_ATAC
-    seu.s <- Signac::RunTFIDF(seu.atac)
-    seu.s <- Signac::FindTopFeatures(seu.atac, min.cutoff = 'q0')
-    seu.s <- Signac::RunSVD(seu.atac)
+    seu.atac <- Signac::RunTFIDF(seu.atac)
+    seu.atac <- Signac::FindTopFeatures(seu.atac, min.cutoff = 'q0')
+    seu.atac <- Signac::RunSVD(seu.atac)
     
     
     dimToUse_ATAC = setdiff(1:SCT_nDimensions, dimensionsToIgnore_LSI_ATAC)
     
-    seu.s <- Seurat::RunUMAP(seu.atac, reduction = 'lsi', dims = dimToUse_ATAC, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+    seu.atac <- Seurat::RunUMAP(seu.atac, reduction = 'lsi', dims = dimToUse_ATAC, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
     
     # # We calculate a WNN graph, representing a weighted combination of RNA and ATAC-seq modalities. We use this graph for UMAP visualization and clustering
     # seu.s <- Seurat::FindMultiModalNeighbors(seu.s, reduction.list = list("pca", "lsi"), dims.list = list(dimToUseRNA, dimToUse_ATAC),
@@ -203,76 +184,77 @@ prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.atac,
   sumCounts  = TRUE
   aggregationType = dplyr::if_else(sumCounts == TRUE, "", "_mean")
   
- 
-    futile.logger::flog.info(paste0("Creating pseudobulk based on the following pre-existing cell identity column: ", pseudobulk_source))
-    
-    file_in_rna  = paste0(outputDir, "/rna.pseudobulkFromClusters_" , pseudobulk_source, aggregationType, ".tsv.gz")
-    file_in_atac = paste0(outputDir, "/atac.pseudobulkFromClusters_", pseudobulk_source, aggregationType, ".tsv.gz")
-    
-    if (file.exists(file_in_rna) & file.exists(file_in_atac)) {
-      seu.s
-    }
-    
-    # Normalize levels and make the names compatible
-    seu.rna@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.rna@meta.data[[pseudobulk_source]])
-    seu.rna@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.rna@meta.data[[pseudobulk_source]])
-    
-    seu.atac@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.atac@meta.data[[pseudobulk_source]])
-    seu.atac@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.atac@meta.data[[pseudobulk_source]])
-    
-    Seurat::Idents(seu.rna) =  pseudobulk_source
-    Seurat::Idents(seu.atac) =  pseudobulk_source
-    
-    # if (doDimPlots) {
-    #   pdfFile = paste0(outputDir, "/dimPlot_combined_", pseudobulk_source, ".pdf")
-    #   .doDimPlots(seu.s, groupBy = pseudobulk_source, pdfFile = pdfFile)
-    # }
-    
-    file_metadata = paste0(outputDir, "/metadata_", pseudobulk_source, ".tsv.gz")
-    .writeMetadata(seu.rna, file_metadata)
-    
-    
-    # RNA #
-    futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
-    rna.pseudobulk.clean = .aggregateCounts(seu.rna, assayName_RNA, groupBy = pseudobulk_source, ID_column = "gene", sumCounts = sumCounts)
-    
-    # Merge with the actual features and their correct mappings.
-    rna.pseudobulk.clean2 = .addEnsemblIDs(rna.pseudobulk.clean, mapping = features)
-    
-    futile.logger::flog.info(paste0(" Writing RNA counts to file ", file_in_rna))
-    readr::write_tsv(rna.pseudobulk.clean2, file_in_rna)
-    
-    .printScarcity(rna.pseudobulk.clean2, type = "RNA")
-    
-    
-    # ATAC #
-    futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
-    atac.pseudobulk.clean = .aggregateCounts(seu.atac, assayName_ATAC, groupBy = pseudobulk_source, sumCounts = sumCounts, ID_column = "peakID")
-    
-    # Replace the first hyphen with a colon
-    atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
-    
-    futile.logger::flog.info(paste0(" Writing ATAC counts to file ", file_in_atac))
-    readr::write_tsv(atac.pseudobulk.clean, file_in_atac)
-    
-    .printScarcity(atac.pseudobulk.clean, type = "ATAC")
-    
+  
+  futile.logger::flog.info(paste0("Creating pseudobulk based on the following pre-existing cell identity column: ", pseudobulk_source))
+  
+  file_in_rna  = paste0(outputDir, "/rna.pseudobulkFromClusters_" , pseudobulk_source, aggregationType, ".tsv.gz")
+  file_in_atac = paste0(outputDir, "/atac.pseudobulkFromClusters_", pseudobulk_source, aggregationType, ".tsv.gz")
+  
+  if (file.exists(file_in_rna) & file.exists(file_in_atac)) {
+    seu.rna
+    seu.atac
+  }
+  
+  # Normalize levels and make the names compatible
+  seu.rna@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.rna@meta.data[[pseudobulk_source]])
+  seu.rna@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.rna@meta.data[[pseudobulk_source]])
+  
+  seu.atac@meta.data[[pseudobulk_source]] = gsub(" ", "_", seu.atac@meta.data[[pseudobulk_source]])
+  seu.atac@meta.data[[pseudobulk_source]] = gsub("-", "_", seu.atac@meta.data[[pseudobulk_source]])
+  
+  Seurat::Idents(seu.rna) =  pseudobulk_source
+  Seurat::Idents(seu.atac) =  pseudobulk_source
+  
+  # if (doDimPlots) {
+  #   pdfFile = paste0(outputDir, "/dimPlot_combined_", pseudobulk_source, ".pdf")
+  #   .doDimPlots(seu.s, groupBy = pseudobulk_source, pdfFile = pdfFile)
+  # }
+  
+  file_metadata = paste0(outputDir, "/metadata_", pseudobulk_source, ".tsv.gz")
+  .writeMetadata(seu.rna, file_metadata)
+  
+  
+  # RNA #
+  futile.logger::flog.info(paste0(" Aggregate and prepare RNA counts for each cluster"))
+  rna.pseudobulk.clean = .aggregateCounts(seu.rna, assayName_RNA, groupBy = pseudobulk_source, ID_column = "gene", sumCounts = sumCounts)
+  
+  # Merge with the actual features and their correct mappings.
+  rna.pseudobulk.clean2 = .addEnsemblIDs(rna.pseudobulk.clean, mapping = features)
+  
+  futile.logger::flog.info(paste0(" Writing RNA counts to file ", file_in_rna))
+  readr::write_tsv(rna.pseudobulk.clean2, file_in_rna)
+  
+  .printScarcity(rna.pseudobulk.clean2, type = "RNA")
+  
+  
+  # ATAC #
+  futile.logger::flog.info(paste0(" Aggregate and prepare ATAC counts for each cluster"))
+  atac.pseudobulk.clean = .aggregateCounts(seu.atac, assayName_ATAC, groupBy = pseudobulk_source, sumCounts = sumCounts, ID_column = "peakID")
+  
+  # Replace the first hyphen with a colon
+  atac.pseudobulk.clean$peakID = sub("-", ":", atac.pseudobulk.clean$peakID)
+  
+  futile.logger::flog.info(paste0(" Writing ATAC counts to file ", file_in_atac))
+  readr::write_tsv(atac.pseudobulk.clean, file_in_atac)
+  
+  .printScarcity(atac.pseudobulk.clean, type = "ATAC")
+  
   
   
   
   if (saveSeuratObject) {
     
     file_seurat_rna = paste0(outputDir, "/seuratObject.rna.qs")
-    qs::qsave(seu.rna,  file_seurat)
+    qs::qsave(seu.rna,  file_seurat_rna)
     file_seurat_atac = paste0(outputDir, "/seuratObject.atac.qs")
-    qs::qsave(seu.atac,  file_seurat)
+    qs::qsave(seu.atac,  file_seurat_atac)
     
   } 
   
   GRaNIE:::.printExecutionTime(start, prefix = "") 
   futile.logger::flog.info(paste0("Finished successfully, all output files have been saved in ", outputDir, ". Returning the Seurat object. Happy GRaNIE'ing!"))
   
-
+  
 }
 
 #' @import ggplot2
@@ -408,3 +390,21 @@ prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.atac,
   
   futile.logger::flog.info(paste0(" Sparsity ", type, ": ",  spasity_fraction))
 }
+
+# Prepare data
+seur = prepareDataSepModalities_GRaNIE(seu.rna = seur.rna, seu.atac = seur.atac, outputDir = seurat_outputFolder, pseudobulk_source = "leidenSub1.2",
+                                       file_RNA_features = file_RNA_features,
+                                       prepareData = TRUE,
+                                       saveSeuratObject = TRUE)
+
+# runGRaNIE for the specified metadata column
+GRN = runGRaNIE(
+  datasetName = "CRISPR_NPC_Neuron_Dataset",
+  dir_output = paste0(seurat_outputFolder,"/output_pseudobulk_leidenSub1.2_RNA_limma_quantile_ATAC_DESeq2_sizeFactors"),
+  file_peaks = paste0(seurat_outputFolder,"/atac.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
+  file_rna = paste0(seurat_outputFolder,"/rna.pseudobulkFromClusters_leidenSub1.2.tsv.gz"),
+  file_metadata = paste0(seurat_outputFolder,"/metadata_leidenSub1.2.tsv.gz"),
+  genomeAssembly = "hg38",
+  nCores = 8,
+  runNetworkAnalyses = TRUE,
+  correlation.method = "spearman")
