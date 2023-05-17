@@ -103,7 +103,7 @@ GRN = runGRaNIE(
 
 
 # Prepare Data function from separate modalities
-prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.rna,
+prepareDataSepModalities_GRaNIE <- function(seur.rna, seur.atac,
                                      outputDir = "pseudobulk", saveSeuratObject = TRUE,
                                      file_RNA_features = "/g/zaugg/carnold/Projects/GRN_pipeline/misc/singleCell/sharedMetadata/features_RNA_hg38.tsv.gz", 
                                      assayName_RNA = "RNA", assayName_ATAC= "ATAC", 
