@@ -19,9 +19,12 @@ GRN = build_eGRN_graph(GRN, forceRerun = TRUE)
 # visualize the filtered eGRN
 GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1200)
 GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1200, layout = "kk", colorby = "community", nCommunitiesMax = 15)
+GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1200, layout = "kk", colorby = "community", nCommunitiesMax = 60)
 GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1200, layout = "kk")
 GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1600, graph = "TF-peak-gene")
 GRN = visualizeGRN(GRN, plotAsPDF = FALSE, maxEdgesToPlot = 1600, graph = "TF-peak-gene", layout = "kk")
 
 # TF enrichment
 GRN = plotTFEnrichment(GRN, plotAsPDF = FALSE, n = 3, pages = c(5), maxWidth_nchar_plot = 150)
+
+
