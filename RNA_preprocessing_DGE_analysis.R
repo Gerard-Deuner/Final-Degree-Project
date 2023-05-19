@@ -130,6 +130,6 @@ results$gene <- vapply(strsplit(rownames(results),"[.]"), `[`, 1, FUN.VALUE=char
 DE <- results %>%
   dplyr::rename(padj = adj.P.Val) %>%
   dplyr::inner_join(annotLookup, by = "gene") %>%
-  dplyr::select(gene = gene.ENSEMBL, padj, logFC)
+  dplyr::select(ENSEMBL = gene.ENSEMBL, padj, logFC)
 
 fwrite(DE, paste0(dir, "DE_timecourse.tsv"))
