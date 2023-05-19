@@ -9,6 +9,7 @@
 library(edgeR)  # 'edgeR' also loads 'limma' 
 library(EnsDb.Hsapiens.v86)
 library(Glimma)
+library(limma)
 library(SummarizedExperiment)
 library(factoextra)
 library(pheatmap)
@@ -40,9 +41,9 @@ se <- SummarizedExperiment(assay = list("counts" = RNA),
 names(colData(se)) <- "sample"
 se$day <- as.factor(rep(0:4, each = 7))
 
-# Remove lowly expressed genes
-keep <- filterByExpr(se, group = se)
-se <- se[keep, ]
+# # Remove lowly expressed genes (I want DGE data for all genes)
+# keep <- filterByExpr(se, group = se)
+# se <- se[keep, ]
 
 # Save the se in a .RData file
 save(se, file = paste0(dir, "se.RData"))
@@ -104,11 +105,12 @@ dt <- decideTests(fit, adjust.method = "fdr", p.value = 0.05)
 summary(dt)
 
 # glMD Plot
-#glMDPlot(fit, status = dt, side.main="ENSEMBL", counts = log2(assays(se)$TMM+1), groups = se$day)
+glMDPlot(fit, status = dt, side.main="ENSEMBL", counts = log2(assays(se)$TMM+1), groups = se$day)
 
 # Volcano Plot
 dgl$samples$group <- dgl$samples$day  # Allows coloring by cohort
-glimmaVolcano(fit, dge = dgl) 
+volcanoplot(fit, dge = dgl, style = "p-value", highlight = 0, names = fit$genes$ID, hl.col="blue",
+            xlab = "Log2 Fold Change", ylab = NULL, pch=16, cex=0.35) 
 
 # load gene ENSEMBL annotations
 require('biomaRt')
@@ -124,11 +126,10 @@ annotLookup <- getBM(
 colnames(annotLookup)[1:2] <- c("gene", "gene.ENSEMBL") 
 
 # Generate DE dataframe to give as input to GRaNPA
+results$gene <- vapply(strsplit(rownames(results),"[.]"), `[`, 1, FUN.VALUE=character(1))
 DE <- results %>%
-  dplyr::select(logFC, adj.P.Val) %>%
-  mutate(gene = rownames(results)) %>%
   dplyr::rename(padj = adj.P.Val) %>%
-  inner_join(annotLookup, by = "gene", multiple = "all")
+  dplyr::inner_join(annotLookup, by = "gene") %>%
+  dplyr::select(gene = gene.ENSEMBL, padj, logFC)
 
-nrow(results)
-nrow(DE)
+fwrite(DE, paste0(dir, "DE_timecourse.tsv"))
