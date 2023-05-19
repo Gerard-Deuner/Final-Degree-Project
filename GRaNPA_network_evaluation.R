@@ -3,7 +3,7 @@
 #############################
 
 # load libraries
-library(GRanIE)
+library(GRaNIE)
 library(GRaNPA)
 library(dplyr)
 library(qs)
@@ -30,9 +30,9 @@ GRaNPA_d4d0 = GRaNPA::GRaNPA_main_function(DE_data = DE,
                                              GRN_matrix_filtered = GRN,
                                              DE_pvalue_th = 0.05,
                                              logFC_th = 2,
-                                             num_run = 3,
-                                             num_run_CR = 2,
-                                             num_run_random = 3,
+                                             num_run = 20, #3
+                                             num_run_CR = 20, #2
+                                             num_run_random = 20, #3
                                              cores = 20,
                                              importance = "permutation",
                                              ML_type = "regression",
@@ -72,9 +72,9 @@ GRaNPA_d2d0 = GRaNPA::GRaNPA_main_function(DE_data = DE,
                                            GRN_matrix_filtered = GRN,
                                            DE_pvalue_th = 0.05,
                                            logFC_th = 2,
-                                           num_run = 3,
-                                           num_run_CR = 2,
-                                           num_run_random = 3,
+                                           num_run = 20,
+                                           num_run_CR = 20,
+                                           num_run_random = 20,
                                            cores = 20,
                                            importance = "permutation",
                                            ML_type = "regression",
@@ -114,9 +114,9 @@ GRaNPA_d4d2 = GRaNPA::GRaNPA_main_function(DE_data = DE,
                                            GRN_matrix_filtered = GRN,
                                            DE_pvalue_th = 0.05,
                                            logFC_th = 2,
-                                           num_run = 3,
-                                           num_run_CR = 2,
-                                           num_run_random = 3,
+                                           num_run = 20,
+                                           num_run_CR = 20,
+                                           num_run_random = 20,
                                            cores = 20,
                                            importance = "permutation",
                                            ML_type = "regression",
@@ -151,7 +151,8 @@ GRaNPA::plot_GRaNPA_boxplot(GRaNPA.object_list = list(GRaNPA_d4d0, GRaNPA_d2d0, 
                             plot_name = "combined_spearman_res8_GRaNPA.pdf", 
                             output = "." , 
                             width = 8,
-                            height = 4)
+                            height = 4) + 
+  geom_hline(yintercept = 0.05, col = "red", linetype = "dashed")
 
 #########################
 # MODIFY SOME FUNCTIONS #
