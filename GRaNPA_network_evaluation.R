@@ -11,8 +11,11 @@ library(readxl)
 library(data.table)
 library(ggpubr)
 
+# define resolution 
+res <- 6 # 8, 6, 10, 0.25, 18
+
 # load eGRN 
-GRN = fread("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes8_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz")
+GRN = fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
 head(GRN)
 
 
@@ -54,9 +57,11 @@ p2 <- plot_GRaNPA_scatter_mod(GRaNPA.object = GRaNPA_d4d0,
 # Investigate important TFs
 p3 <- GRaNPA::plot_GRaNPA_TF_imp(GRaNPA.object = GRaNPA_d4d0, plot_name = "TF_imp.pdf", output = ".", width = 4, height = 4) 
 
-ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
+pl <- ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
   annotate_figure(top = text_grob("GRaNPA Analysis - Day 4 vs. Day 0", 
                                         color = "black", face = "bold", size = 14))
+pl
+ggsave(paste0("/g/scb/zaugg/deuner/GRaNPA/figures/res", res, "Day4vsDay0.png"), pl, device = "png")
 
 ##########################################
 # Day 2 vs Day 0 Differential Expression #
@@ -96,9 +101,11 @@ p2 <- plot_GRaNPA_scatter_mod(GRaNPA.object = GRaNPA_d2d0,
 # Investigate important TFs
 p3 <- GRaNPA::plot_GRaNPA_TF_imp(GRaNPA.object = GRaNPA_d2d0, plot_name = "TF_imp.pdf", output = ".", width = 4, height = 4) 
 
-ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
+pl <- ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
   annotate_figure(top = text_grob("GRaNPA Analysis - Day 2 vs. Day 0", 
                                   color = "black", face = "bold", size = 14))
+pl
+ggsave(paste0("/g/scb/zaugg/deuner/GRaNPA/figures/res", res, "Day2vsDay0.png"), pl, device = "png")
 
 ##########################################
 # Day 4 vs Day 2 Differential Expression #
@@ -138,15 +145,18 @@ p2 <- plot_GRaNPA_scatter_mod(GRaNPA.object = GRaNPA_d4d2,
 # Investigate important TFs
 p3 <- GRaNPA::plot_GRaNPA_TF_imp(GRaNPA.object = GRaNPA_d4d2, plot_name = "TF_imp.pdf", output = ".", width = 4, height = 4) 
 
-ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
+pl <- ggarrange(p1, p2, p3, labels = c("A", "B", "C")) %>% 
   annotate_figure(top = text_grob("GRaNPA Analysis - Day 4 vs. Day 2", 
                                   color = "black", face = "bold", size = 14))
+pl
+ggsave(paste0("/g/scb/zaugg/deuner/GRaNPA/figures/res", res, "Day4vsDay2.png"), pl, device = "png")
+
 ####################
 # eGRNs Comparison #
 ####################
 
 # Plot R square
-GRaNPA::plot_GRaNPA_boxplot(GRaNPA.object_list = list(GRaNPA_d4d0, GRaNPA_d2d0, GRaNPA_d4d2),  
+cpl <- GRaNPA::plot_GRaNPA_boxplot(GRaNPA.object_list = list(GRaNPA_d4d0, GRaNPA_d2d0, GRaNPA_d4d2),  
                             name_list = c("Day4 vs Day0", "Day2 vs Day0", "Day4 vs Day2"), 
                             plot_name = "combined_spearman_res8_GRaNPA.pdf", 
                             output = "." , 
@@ -154,9 +164,13 @@ GRaNPA::plot_GRaNPA_boxplot(GRaNPA.object_list = list(GRaNPA_d4d0, GRaNPA_d2d0, 
                             height = 4) + 
   geom_hline(yintercept = 0.05, col = "red", linetype = "dashed")
 
+ggsave(paste0("/g/scb/zaugg/deuner/GRaNPA/figures/res", res, "eGRNs_comparison"), cpl, device = "png")
+
+
 #########################
 # MODIFY SOME FUNCTIONS #
 #########################
+
 plot_GRaNPA_scatter_mod <- function(
     GRaNPA.object, ## this should be a object from prediction power pipeline.
     outputFolder,
