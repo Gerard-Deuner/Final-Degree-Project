@@ -399,11 +399,11 @@ GRaNPA_objects <- list(GRaNPA_d4d0res0.1, GRaNPA_d4d0res0.25, GRaNPA_d4d0res0.5,
 # first iterate over all of them and get the top 5 important TFs
 imp_TFs <- c()
 for (GRaNPA in GRaNPA_objects){
-  TF_names <- GRaNPA %>% 
-    arrange(desc(2)) %>% 
-    head() %>%
+  TF_names <- GRaNPA$nrm_imp_unscaled %>%
+    arrange(desc(Overall)) %>%
+    head(2) %>%
     rownames()
-  
+
   imp_TFs <- c(imp_TFs, TF_names)
 }
 
@@ -412,33 +412,37 @@ imp_TFs <- unique(imp_TFs)
 
 # format dataframe
 #         0.1 0.25 0.5 0.75 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20
-# POU4F1  
+# POU4F1
 # KLF12
 
 # create df
-imp_TFs.df <- as.data.frame(matrix(nrow = length(imp_TFs.df), ncol = 19))
-names(imp_TFs.df) <- resolutions
-rownames(imp_TFs.df) <- imp_TFs
+imp_TFs.df <- as.data.frame(matrix(nrow = length(imp_TFs), ncol = 19, data = c(rep(rep(0, 19), length(imp_TFs)))))
+names(imp_TFs.df) <- as.character(resolutions)
+rownames(imp_TFs.df) <- as.character(imp_TFs)
 
 
 # add scores to df
 i <- 1
 for (GRaNPA in GRaNPA_objects){
-  TF_scores <- GRaNPA %>% 
-    arrange(desc(2)) %>% 
-    head() %>%
-    dplyr::select(2)
+  TF_scores <- GRaNPA$nrm_imp_unscaled %>%
+    arrange(desc(Overall)) %>%
+    head(2)
   for (TF in rownames(TF_scores)){
-    imp_TFs[TF, resolutions[i]] = TF_scores[TF, 1]
+    print(TF)
+    imp_TFs.df[TF, as.character(resolutions[i])] = TF_scores[TF, 1]
   }
-  
+
   i <- i+1
 }
 
-# transform df to long format
+# remove NAs
+imp_TFs.df[is.na(imp_TFs.df)] = 0
 
-imp_TFs.df.long <- pivot_longer(imp_TFs.df, c(recovered, non_recovered), names_to = "resolution", values_to = "score")
+# transform df to long format
+imp_TFs.df$TF <- rownames(imp_TFs.df)
+imp_TFs.df.long <- pivot_longer(imp_TFs.df, cols=as.character(resolutions), names_to = "resolution", values_to = "score")
 
 # plot
-ggplot(imp_TFs.df, aes(x = resolution, y = score), col = TF) + 
+imp_TFs.df.long$resolution <- as.factor(imp_TFs.df.long$resolution)
+ggplot(imp_TFs.df.long, aes(x = as.factor(as.numeric(resolution)), y = score, group = TF, col = TF)) + 
   geom_line()
