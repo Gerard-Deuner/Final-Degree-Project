@@ -397,7 +397,7 @@ GRaNPA_objects <- list(GRaNPA_d4d0res0.1, GRaNPA_d4d0res0.25, GRaNPA_d4d0res0.5,
                        GRaNPA_d4d0res16, GRaNPA_d4d0res18, GRaNPA_d4d0res20)
 
 # first iterate over all of them and get the top 5 important TFs
-imp_TFs <- c()
+imp_TFs <-c()
 for (GRaNPA in GRaNPA_objects){
   TF_names <- GRaNPA$nrm_imp_unscaled %>%
     arrange(desc(Overall)) %>%
@@ -425,9 +425,8 @@ rownames(imp_TFs.df) <- as.character(imp_TFs)
 i <- 1
 for (GRaNPA in GRaNPA_objects){
   TF_scores <- GRaNPA$nrm_imp_unscaled %>%
-    arrange(desc(Overall)) %>%
-    head(2)
-  for (TF in rownames(TF_scores)){
+    arrange(desc(Overall))
+  for (TF in imp_TFs){ # iterate over the set of TFs!
     print(TF)
     imp_TFs.df[TF, as.character(resolutions[i])] = TF_scores[TF, 1]
   }
@@ -443,6 +442,11 @@ imp_TFs.df$TF <- rownames(imp_TFs.df)
 imp_TFs.df.long <- pivot_longer(imp_TFs.df, cols=as.character(resolutions), names_to = "resolution", values_to = "score")
 
 # plot
+colours <- c("#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#800080", "#FFA500", "#008000", "#FFC0CB", "#000080", "#FF4500", "#800000")
 imp_TFs.df.long$resolution <- as.factor(imp_TFs.df.long$resolution)
 ggplot(imp_TFs.df.long, aes(x = as.factor(as.numeric(resolution)), y = score, group = TF, col = TF)) + 
-  geom_line()
+  geom_line() +
+  labs(y = "Importance Score (unscaled) ", x = "Resolutions") +
+  scale_color_manual(values = colours) +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  theme_bw() 
