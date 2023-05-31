@@ -66,26 +66,26 @@ fviz_pca_ind(PCA, addEllipses = F,
              col.ind = se$day,
              pointsize = 3)
 
-# heatmap
-pheatmap(log2(assays(se)$TMM + 1),
-         show_rownames = FALSE, 
-         annotation_col = as.data.frame(colData(se)))
+# # heatmap
+# pheatmap(log2(assays(se)$TMM + 1),
+#          show_rownames = FALSE, 
+#          annotation_col = as.data.frame(colData(se)))
 
 # Create design matrix and contrast matrix of iPSCs (day 0) vs mature neurons (day 4)
-d0d4_se <- se[,se$day %in% c(0, 4)]
-day <- as.factor(d0d4_se$day)
+d2d0_se <- se[,se$day %in% c(2, 0)]
+day <- as.factor(d2d0_se$day)
 design <- model.matrix(~0 + day)
 #colnames(design)[1:2] <- levels(day)
 head(design)
 
 contrast <- makeContrasts(
-  day4 - day0,
+  day2 - day0,
   levels = colnames(design)
 )
 contrast
 
 # Remove mean-variance relationship from count data
-y <- voom(dgl[, dgl$samples$day %in% c(0,4)], design, plot = TRUE)
+y <- voom(dgl[, dgl$samples$day %in% c(2,0)], design, plot = TRUE)
 
 
 # Fit linear models for all pairwise comparisons
@@ -105,7 +105,7 @@ dt <- decideTests(fit, adjust.method = "fdr", p.value = 0.05)
 summary(dt)
 
 # glMD Plot
-glMDPlot(fit, status = dt, side.main="ENSEMBL", counts = log2(assays(se)$TMM+1), groups = se$day)
+#glMDPlot(fit, status = dt, side.main="ENSEMBL", counts = log2(assays(se)$TMM+1), groups = se$day)
 
 # Volcano Plot
 dgl$samples$group <- dgl$samples$day  # Allows coloring by cohort
@@ -132,4 +132,4 @@ DE <- results %>%
   dplyr::inner_join(annotLookup, by = "gene") %>%
   dplyr::select(ENSEMBL = gene.ENSEMBL, padj, logFC)
 
-fwrite(DE, paste0(dir, "DE_timecourse.tsv"))
+fwrite(DE, paste0(dir, "DE_timecourse_Day2vsDay0.tsv"))
