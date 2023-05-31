@@ -138,7 +138,7 @@ for (res in resolutions){
   r_pos_class = c("black", "darkgray")
   names(r_pos_class) = c("TRUE", "FALSE")
   
-  dist_class = c(informative_colors[i], background_colors[i])#c("dark red", "#fc9c9c")
+  dist_class = c(informative_colors[[i]], background_colors[[i]])#c("dark red", "#fc9c9c")
   names(dist_class) = class_levels
   
   freqs = table(peakGeneCorrelations.all$class)
@@ -146,7 +146,6 @@ for (res in resolutions){
   # Change upstream and go with "background" everywhere
   freq_class = gsub(freq_class, pattern = "random", replacement = "background")
   names(freq_class) <- names(freqs)
-  
   
   xlabels_peakGene_r.class = levels(peakGeneCorrelations.all$peak_gene.r.class)
   nCur = length(xlabels_peakGene_r.class)
