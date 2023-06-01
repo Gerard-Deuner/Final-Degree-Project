@@ -18,6 +18,7 @@ density_plots <- c()
 ratio_plots <- c()
 rcorr_plots <- c()
 
+line_types <- c("solid", "dashed")
 ii <- 1
 for (res in resolutions){
   
@@ -124,7 +125,7 @@ for (res in resolutions){
   #informative_colors <- informative_palette(19)
   informative_colors <- c("#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#FFFF00", "#CCFF00", "#99FF00", "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF", "#0066FF")
   #background_colors <- c("#FFD9D9", "#FFCEC0", "#FFC9AF", "#FFC3AD", "#FFBD9B", "#FFF4AD", "#D9FFAD", "#C4FFAD", "#A9FFAD", "#8EFFAD", "#ADFFAD", "#ADFFCE", "#ADFFD9", "#ADFFE6", "#ADFFEF", "#ADEDFF", "#ADDEFF", "#ADD3EB", "#ADCEE6")
-  background_colors <- scales::lighten(informative_colors, amount = 0.5)
+  background_colors <- scales::alpha(informative_colors, alpha = 0.5)
   
   # Background Color Gradient
   #background_palette <- colorRampPalette(c("#000000", "#999999"))
@@ -282,17 +283,15 @@ for (res in resolutions){
             ggplot2::theme(legend.position = "none", 
                            axis.text = ggplot2::element_text(size = ggplot2::rel(0.6)), 
                            strip.text.x = ggplot2::element_text(size = ggplot2::rel(0.8))) +
-            ggplot2::scale_color_identity() + 
-            ggplot2::scale_linetype_manual(values = c("solid", "dotted"))
+            ggplot2::scale_color_identity() 
         } else {
           gA2 <- gA2 + ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
                                              mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class),
-                                             show.legend = FALSE) +
-            ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
-                                  mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class)) + 
-            ggplot2::scale_linetype_manual(values = c("solid", "dotted"))
-          
+                                             show.legend = FALSE) 
         }
+        gA2 <- gA2 + ggplot2::scale_linetype_manual(values = line_types)
+        
+        line_types <- c(line_types, "solid", "dashed") 
         
         density_plots <- c(density_plots, gA2)
         
@@ -388,9 +387,6 @@ for (res in resolutions){
   ii <- ii + 1
 }
 
-
-
-background_colors <- scales::lighten(informative_colors, amount = 0.5)
 
 
 ####################
