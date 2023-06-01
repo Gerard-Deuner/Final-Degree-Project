@@ -120,18 +120,20 @@ for (res in resolutions){
   
   
   # Prepare plots #
-  informative_palette <- colorRampPalette(c("#ff0000", "#0000ff"))
-  informative_colors <- informative_palette(19)
+  #informative_palette <- colorRampPalette(c("#ff0000", "#0000ff"))
+  #informative_colors <- informative_palette(19)
+  informative_colors <- c("#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#FFFF00", "#CCFF00", "#99FF00", "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF", "#0066FF")
+  background_colors <- c("#FFD9D9", "#FFCEC0", "#FFC9AF", "#FFC3AD", "#FFBD9B", "#FFF4AD", "#D9FFAD", "#C4FFAD", "#A9FFAD", "#8EFFAD", "#ADFFAD", "#ADFFCE", "#ADFFD9", "#ADFFE6", "#ADFFEF", "#ADEDFF", "#ADDEFF", "#ADD3EB", "#ADCEE6")
   
   # Background Color Gradient
-  background_palette <- colorRampPalette(c("#000000", "#999999"))
-  background_colors <- background_palette(19)
+  #background_palette <- colorRampPalette(c("#000000", "#999999"))
+  #background_colors <- background_palette(19)
   
   colors_class = c("black", "black")
   names(colors_class) = unique(peakGeneCorrelations.all$class)
   colors_class[which(grepl("random", names(colors_class)))] = "darkgray"
     
-  r_pos_class = c("black", "darkgray")
+  r_pos_class = c(informative_colors[[ii]], background_colors[[ii]]) #c("black", "darkgray")
   names(r_pos_class) = c("TRUE", "FALSE")
   
   dist_class = c(informative_colors[[ii]], background_colors[[ii]]) #c("dark red", "#fc9c9c") 
@@ -253,18 +255,37 @@ for (res in resolutions){
                                     axis.text.y = ggplot2::element_text(size = ggplot2::rel(0.8)),
                                     panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank())
         
+        # dist_class2 <- dist_class
+        # names(dist_class2) <- as.logical(c("TRUE", "FALSE"))
+
+        # peakGeneCorrelations.all2 <- peakGeneCorrelations.all2 %>%
+        #   mutate(r_pos_class = r_pos_class[peakGeneCorrelations.all2$r_positive])
+        # 
+        peakGeneCorrelations.all$r_pos_class = unname(r_pos_class[as.character(peakGeneCorrelations.all$r_positive)])
+        peakGeneCorrelations.all$dist_class = unname(dist_class[as.character(peakGeneCorrelations.all$class)])
         
+        names(peakGeneCorrelations.all$r_pos_class)
         
         ## p-val density curves stratified by real vs background ##
         
         if (res == 0.1) {
-          gA2 = ggplot2::ggplot(peakGeneCorrelations.all[indexCur,], ggplot2::aes(.data$peak_gene.p_raw, color = .data$r_positive)) + ggplot2::geom_density()  +
-            ggplot2::facet_wrap(~ .data$class, labeller = ggplot2::labeller(class = freq_class) ) +
-            ggplot2::xlab(xlabel) + ggplot2::ylab("Density") +  ggplot2::theme_bw() +
-            ggplot2::scale_color_manual(labels = names(r_pos_class), values = r_pos_class) +
-            ggplot2::theme(legend.position = "none", axis.text = ggplot2::element_text(size = ggplot2::rel(0.6)), strip.text.x = ggplot2::element_text(size = ggplot2::rel(0.8)))
+          gA2 <- ggplot2::ggplot(peakGeneCorrelations.all[indexCur,], ggplot2::aes(peak_gene.p_raw)) +
+            ggplot2::geom_density(ggplot2::aes(color = dist_class, linetype = r_pos_class)) +
+            ggplot2::facet_wrap(~ class, labeller = ggplot2::labeller(class = freq_class)) +
+            ggplot2::xlab(xlabel) +
+            ggplot2::ylab("Density") +
+            ggplot2::theme_bw() +
+            ggplot2::theme(legend.position = "none", 
+                           axis.text = ggplot2::element_text(size = ggplot2::rel(0.6)), 
+                           strip.text.x = ggplot2::element_text(size = ggplot2::rel(0.8))) +
+            ggplot2::scale_color_identity()
         } else {
-          gA2 = gA2 + ggplot2::geom_density(peakGeneCorrelations.all[indexCur,], mapping = ggplot2::aes(.data$peak_gene.p_raw, color = .data$r_positive))
+          gA2 <- gA2 + ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
+                                             mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class),
+                                             show.legend = FALSE) +
+            ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
+                                  mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class))
+          
         }
         
         density_plots <- c(density_plots, gA2)
@@ -295,7 +316,7 @@ for (res in resolutions){
             # ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 8) , axis.title.y = ggplot2::element_blank()) +
             theme_main +
             ggplot2::facet_wrap(~ factor(set), nrow = 2, scales = "free_y", strip.position = "left") 
-       
+          
         } else {
           gB3 = gB3 + ggplot2::geom_bar(tbl.l$d_merged, mapping = ggplot2::aes(.data$peak_gene.p.raw.bins, .data$ratio, fill = .data$classAll), stat = "identity", position = "dodge", na.rm = TRUE, width = 0.5)
         }
@@ -320,7 +341,7 @@ for (res in resolutions){
           mutate(dist_class = dist_class[class])
         
         xlabel = paste0("Correlation coefficient r (binned)")
-
+        
         
         if (res == 0.1){
           gD = ggplot2::ggplot(binData.r, ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), fill = binData.r$dist_class)+#.data$class)) + 
@@ -333,7 +354,7 @@ for (res in resolutions){
             ggplot2::theme_bw() + ggplot2::theme(legend.position = "none") +
             ggplot2::xlab(xlabel) + ggplot2::ylab("Abundance") +
             theme_main  #+
-            #ggplot2::scale_y_continuous(labels = scales::scientific)
+          #ggplot2::scale_y_continuous(labels = scales::scientific)
         } else{
           gD = gD + #ggplot2::geom_bar(binData.r, mapping = ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class, fill = .data$class), stat = "identity", position = ggplot2::position_dodge(preserve = "single"), na.rm = FALSE, width = 0.5) + 
             ggplot2::geom_line(binData.r, mapping = ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), color = binData.r$dist_class, stat = "identity")
@@ -346,7 +367,7 @@ for (res in resolutions){
         
         plots_all = ( ((gA2) + 
                          patchwork::plot_layout(widths = c(4))) / ((gD) + 
-                                                                           patchwork::plot_layout(widths = c(4))) ) + 
+                                                                     patchwork::plot_layout(widths = c(4))) ) + 
           patchwork::plot_layout(heights = c(2,1), guides = 'collect') +
           patchwork::plot_annotation(title = mainTitle, theme = ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)))
         
@@ -360,7 +381,8 @@ for (res in resolutions){
   }
   ii <- ii + 1
 }
- 
+
+
 
 
 ####################
