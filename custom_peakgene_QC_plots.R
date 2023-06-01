@@ -123,7 +123,8 @@ for (res in resolutions){
   #informative_palette <- colorRampPalette(c("#ff0000", "#0000ff"))
   #informative_colors <- informative_palette(19)
   informative_colors <- c("#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#FFFF00", "#CCFF00", "#99FF00", "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF", "#0066FF")
-  background_colors <- c("#FFD9D9", "#FFCEC0", "#FFC9AF", "#FFC3AD", "#FFBD9B", "#FFF4AD", "#D9FFAD", "#C4FFAD", "#A9FFAD", "#8EFFAD", "#ADFFAD", "#ADFFCE", "#ADFFD9", "#ADFFE6", "#ADFFEF", "#ADEDFF", "#ADDEFF", "#ADD3EB", "#ADCEE6")
+  #background_colors <- c("#FFD9D9", "#FFCEC0", "#FFC9AF", "#FFC3AD", "#FFBD9B", "#FFF4AD", "#D9FFAD", "#C4FFAD", "#A9FFAD", "#8EFFAD", "#ADFFAD", "#ADFFCE", "#ADFFD9", "#ADFFE6", "#ADFFEF", "#ADEDFF", "#ADDEFF", "#ADD3EB", "#ADCEE6")
+  background_colors <- scales::lighten(informative_colors, amount = 0.5)
   
   # Background Color Gradient
   #background_palette <- colorRampPalette(c("#000000", "#999999"))
@@ -268,23 +269,28 @@ for (res in resolutions){
         
         ## p-val density curves stratified by real vs background ##
         
+        freq_pos <- c("Negative", "Postive")
+        names(freq_pos) <- c(FALSE, TRUE)
+        
         if (res == 0.1) {
           gA2 <- ggplot2::ggplot(peakGeneCorrelations.all[indexCur,], ggplot2::aes(peak_gene.p_raw)) +
             ggplot2::geom_density(ggplot2::aes(color = dist_class, linetype = r_pos_class)) +
-            ggplot2::facet_wrap(~ class, labeller = ggplot2::labeller(class = freq_class)) +
+            ggplot2::facet_grid(r_positive ~ class, labeller = ggplot2::labeller(class = freq_class, r_positive = freq_pos)) +
             ggplot2::xlab(xlabel) +
             ggplot2::ylab("Density") +
             ggplot2::theme_bw() +
             ggplot2::theme(legend.position = "none", 
                            axis.text = ggplot2::element_text(size = ggplot2::rel(0.6)), 
                            strip.text.x = ggplot2::element_text(size = ggplot2::rel(0.8))) +
-            ggplot2::scale_color_identity()
+            ggplot2::scale_color_identity() + 
+            ggplot2::scale_linetype_manual(values = c("solid", "dotted"))
         } else {
           gA2 <- gA2 + ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
                                              mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class),
                                              show.legend = FALSE) +
             ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
-                                  mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class))
+                                  mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class)) + 
+            ggplot2::scale_linetype_manual(values = c("solid", "dotted"))
           
         }
         
@@ -383,6 +389,8 @@ for (res in resolutions){
 }
 
 
+
+background_colors <- scales::lighten(informative_colors, amount = 0.5)
 
 
 ####################
