@@ -125,7 +125,7 @@ for (res in resolutions){
   #informative_colors <- informative_palette(19)
   informative_colors <- c("#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#FFFF00", "#CCFF00", "#99FF00", "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF", "#0066FF")
   #background_colors <- c("#FFD9D9", "#FFCEC0", "#FFC9AF", "#FFC3AD", "#FFBD9B", "#FFF4AD", "#D9FFAD", "#C4FFAD", "#A9FFAD", "#8EFFAD", "#ADFFAD", "#ADFFCE", "#ADFFD9", "#ADFFE6", "#ADFFEF", "#ADEDFF", "#ADDEFF", "#ADD3EB", "#ADCEE6")
-  background_colors <- scales::alpha(informative_colors, alpha = 0.5)
+  background_colors <- scales::alpha(informative_colors, alpha = 0.9)
   
   # Background Color Gradient
   #background_palette <- colorRampPalette(c("#000000", "#999999"))
@@ -142,7 +142,7 @@ for (res in resolutions){
   names(dist_class) = class_levels
   
   freqs = table(peakGeneCorrelations.all$class)
-  freq_class = paste0(gsub(names(freqs), pattern = "(.+)(_.*)", replacement = "\\1"), " (n=", .prettyNum(freqs) , ")")
+  freq_class = paste0(gsub(names(freqs), pattern = "(.+)(_.*)", replacement = "\\1"))#, " (n=", .prettyNum(freqs) , ")")
   # Change upstream and go with "background" everywhere
   freq_class = gsub(freq_class, pattern = "random", replacement = "background")
   names(freq_class) <- names(freqs)
@@ -270,12 +270,12 @@ for (res in resolutions){
         
         ## p-val density curves stratified by real vs background ##
         
-        freq_pos <- c("Negative", "Postive")
+        freq_pos <- c("r- (r<=0)", "r+ (r>0)")
         names(freq_pos) <- c(FALSE, TRUE)
         
         if (res == 0.1) {
           gA2 <- ggplot2::ggplot(peakGeneCorrelations.all[indexCur,], ggplot2::aes(peak_gene.p_raw)) +
-            ggplot2::geom_density(ggplot2::aes(color = dist_class, linetype = r_pos_class)) +
+            ggplot2::geom_density(ggplot2::aes(color = dist_class, linetype = dist_class)) +
             ggplot2::facet_grid(r_positive ~ class, labeller = ggplot2::labeller(class = freq_class, r_positive = freq_pos)) +
             ggplot2::xlab(xlabel) +
             ggplot2::ylab("Density") +
@@ -283,15 +283,14 @@ for (res in resolutions){
             ggplot2::theme(legend.position = "none", 
                            axis.text = ggplot2::element_text(size = ggplot2::rel(0.6)), 
                            strip.text.x = ggplot2::element_text(size = ggplot2::rel(0.8))) +
-            ggplot2::scale_color_identity() 
+            ggplot2::scale_color_identity()
         } else {
           gA2 <- gA2 + ggplot2::geom_density(data = peakGeneCorrelations.all[indexCur,],
-                                             mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = r_pos_class),
+                                             mapping = ggplot2::aes(peak_gene.p_raw, color = dist_class, linetype = dist_class),
                                              show.legend = FALSE) 
         }
         gA2 <- gA2 + ggplot2::scale_linetype_manual(values = line_types)
         
-        line_types <- c(line_types, "solid", "dashed") 
         
         density_plots <- c(density_plots, gA2)
         
@@ -348,30 +347,34 @@ for (res in resolutions){
         xlabel = paste0("Correlation coefficient r (binned)")
         
         
-        if (res == 0.1){
-          gD = ggplot2::ggplot(binData.r, ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), fill = binData.r$dist_class)+#.data$class)) + 
-            #ggplot2::geom_bar(stat = "identity", position = ggplot2::position_dodge(preserve = "single"), na.rm = FALSE, width = 0.5) +
-            ggplot2::geom_line(ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), color = binData.r$dist_class, stat = "identity") +
-            #ggplot2::geom_density(ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class, color = .data$class, alpha = .2), stat = "identity") + 
-            #ggplot2::scale_fill_manual("Group", labels = names(dist_class), values = dist_class) +
-            #ggplot2::scale_color_manual("Group", labels = names(dist_class), values = dist_class) +
-            #ggplot2::scale_x_discrete(labels = xlabels_peakGene_r.class2, drop = FALSE) +
-            ggplot2::theme_bw() + ggplot2::theme(legend.position = "none") +
+        if (res == 0.1) {
+          gD = ggplot2::ggplot(binData.r, ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), fill = binData.r$dist_class) +
+            ggplot2::geom_line(ggplot2::aes(linetype = .data$dist_class), color = binData.r$dist_class, stat = "identity") +
+            ggplot2::theme_bw() +
+            ggplot2::theme(legend.position = "none") +
             ggplot2::xlab(xlabel) + ggplot2::ylab("Abundance") +
-            theme_main  #+
-          #ggplot2::scale_y_continuous(labels = scales::scientific)
-        } else{
-          gD = gD + #ggplot2::geom_bar(binData.r, mapping = ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class, fill = .data$class), stat = "identity", position = ggplot2::position_dodge(preserve = "single"), na.rm = FALSE, width = 0.5) + 
-            ggplot2::geom_line(binData.r, mapping = ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), color = binData.r$dist_class, stat = "identity")
+            theme_main
+        } else {
+          gD = gD +
+            ggplot2::geom_line(data = binData.r,
+                               mapping = ggplot2::aes(x = .data$peak_gene.r.class,
+                                                      y = .data$nnorm,
+                                                      group = .data$class,
+                                                      linetype = .data$dist_class),
+                               color = binData.r$dist_class,
+                               stat = "identity")
         }
         
+        gD <- gD + ggplot2::scale_linetype_manual(values = line_types)
+        
+        line_types <- c(line_types, "solid", "dashed") 
         
         rcorr_plots <- c(rcorr_plots, gD)
         
         mainTitle = paste0("Summary QC (TF: ", TFCur, ", gene type: ", paste0(geneTypesSelected, collapse = "+"), ",\n", .prettyNum(range), " bp promoter range)")
         
         plots_all = ( ((gA2) + 
-                         patchwork::plot_layout(widths = c(4))) / ((gD) + 
+                         patchwork::plot_layout(widths = c(3))) / ((gD) + 
                                                                      patchwork::plot_layout(widths = c(4))) ) + 
           patchwork::plot_layout(heights = c(2,1), guides = 'collect') +
           patchwork::plot_annotation(title = mainTitle, theme = ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)))
