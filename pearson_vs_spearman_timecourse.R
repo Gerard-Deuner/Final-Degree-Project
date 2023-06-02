@@ -7,6 +7,8 @@ library(Seurat)
 library(ggplot2)
 library(ggpubr)
 library(ggrepel)
+library(qs)
+library(GRaNIE)
 
 # Cell Type Pseudobulking - WNN - res: 0.5 - 16 clusters
 
@@ -176,6 +178,8 @@ p5 <-ggplot(top5.p.both %>% dplyr::filter(id == "5"), aes(x = log10(value.RNA), 
 ggarrange(p1,p2,p3,p4,p5)
 p1
 p2
+
+
 
 # Spearman:
 
@@ -384,3 +388,61 @@ p5 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "757121"), aes(x = log10(valu
 
 ggarrange(p1,p2,p3,p4,p5)
 p1
+
+# TF-peak links
+
+###############
+# FINAL PLOTS #
+###############
+
+# peak-gene links #
+
+# correlation: pearson
+
+corMethod <- "pearson"
+
+cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
+digits_round <- 3
+pg.titleCur = paste0("Peak=", top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak.ID) %>% first(), ", Gene=", top5.p.both %>% dplyr::filter(id == "1") %>% pull(gene.ENSEMBL) %>% first(), 
+                  ":\nCor = ", round(top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
+                  "\n", "# eGRN link: highest correlation")
+
+x_min = min(-0.01, min(top5.p.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(top5.p.both$value.ATAC, na.rm = TRUE))
+
+pgp1 <- ggplot(top5.p.both %>% dplyr::filter(id == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+  geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
+  #geom_point(size = rel(0.5)) + 
+  geom_point(alpha = 0.75, size = 2) + 
+  xlim(x_min, NA) + ylim(y_min, NA) +
+  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  scale_color_manual(values = cols)
+
+
+# correlation: spearman
+
+corMethod <- "spearman"
+
+cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
+digits_round <- 3
+pg.titleCur = paste0("Peak=", top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak.ID) %>% first(), ", Gene=", top5.s.both %>% dplyr::filter(id == "1") %>% pull(gene.ENSEMBL) %>% first(), 
+                     ":\nCor = ", round(top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
+                     "\n", "# eGRN link: highest correlation")
+
+x_min = min(-0.01, min(top5.s.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(top5.s.both$value.ATAC, na.rm = TRUE))
+
+pgs1 <- ggplot(top5.s.both %>% dplyr::filter(id == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+  geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
+  #geom_point(size = rel(0.5)) + 
+  geom_point(alpha = 0.75, size = 2) + 
+  xlim(x_min, NA) + ylim(y_min, NA) +
+  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  scale_color_manual(values = cols)
+
+
+# TF-peak links # 
