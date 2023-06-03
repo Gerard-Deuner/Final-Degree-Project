@@ -38,31 +38,31 @@ path = "/g/scb/zaugg/deuner/GRaNIE"
 seuratFile = "timecourse.pp.seuratObject.qs"
 timecourse.s <- qread(paste0(path,"/tmp/",seuratFile))
 
-## PEARSON
-# TF-peak-gene connections here
-GRN.p@connections$all.filtered[["0"]]
-connections.p <- as.data.frame(GRN.p@connections$all.filtered[["0"]])
-
-# SCT counts here
-GRN.p@data[["RNA"]][["counts"]]
-counts.p <- as.data.frame(GRN.p@data[["RNA"]][["counts"]])
-counts.p$gene.ENSEMBL <- rownames(counts.p)
-counts.p
-
-# norm ATAC counts here
-GRN.p@data[["peaks"]][["counts"]]
-peaks.p <- as.data.frame(GRN.p@data[["peaks"]][["counts"]])
-peaks.p$peak.ID <- rownames(peaks.p)
-peaks.p
-
-# connections + counts
-joined.p <- connections.p %>% inner_join(counts.p, by = "gene.ENSEMBL") %>% inner_join(peaks.p, by = "peak.ID")
-
-
-## SPEARMAN
-# peak-gene connections here
-GRN.s@connections$all.filtered[["0"]]
-connections.s <- as.data.frame(GRN.s@connections$all.filtered[["0"]])
+# ## PEARSON
+# # peak-gene connections here
+# GRN.p@connections$all.filtered[["0"]]
+# connections.p <- as.data.frame(GRN.p@connections$all.filtered[["0"]])
+# 
+# # SCT counts here
+# GRN.p@data[["RNA"]][["counts"]]
+# counts.p <- as.data.frame(GRN.p@data[["RNA"]][["counts"]])
+# counts.p$gene.ENSEMBL <- rownames(counts.p)
+# counts.p
+# 
+# # norm ATAC counts here
+# GRN.p@data[["peaks"]][["counts"]]
+# peaks.p <- as.data.frame(GRN.p@data[["peaks"]][["counts"]])
+# peaks.p$peak.ID <- rownames(peaks.p)
+# peaks.p
+# 
+# # connections + counts
+# joined.p <- connections.p %>% inner_join(counts.p, by = "gene.ENSEMBL") %>% inner_join(peaks.p, by = "peak.ID")
+# 
+# 
+# ## SPEARMAN
+# # peak-gene connections here
+# GRN.s@connections$all.filtered[["0"]]
+# connections.s <- as.data.frame(GRN.s@connections$all.filtered[["0"]])
 
 # SCT counts here
 GRN.s@data[["RNA"]][["counts"]]
@@ -76,199 +76,201 @@ peaks.s <- as.data.frame(GRN.s@data[["peaks"]][["counts"]])
 peaks.s$peak.ID <- rownames(peaks.s)
 peaks.s
 
-# connections + counts
-joined.s <- connections.s %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
+# # connections + counts
+# joined.s <- connections.s %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
 
-# check shared TF-peak-links
-tf.peak.gene.p <- GRN.p@connections$all.filtered[["0"]]
-tf.peak.gene.s <- GRN.s@connections$all.filtered[["0"]]
-colnames(tf.peak.gene.p)
+# # check shared TF-peak-links
+# tf.peak.gene.p <- GRN.p@connections$all.filtered[["0"]]
+# tf.peak.gene.s <- GRN.s@connections$all.filtered[["0"]]
+# colnames(tf.peak.gene.p)
+# 
+# tf.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("TF.ID")) 
+# gene.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("gene.name"))
+# peak.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("peak.ID"))
+# 
+# View(tf.peak.gene.p)
+# tf.peak.gene.s
+# 
+# tf.shared.p.s
+# gene.shared.p.s
+# peak.shared.p.s
+# 
+# 
+# # CHECK IF ASSUMPTIONS ARE HELD!
+# # Pearson:
+# 
+# # select top5 most significant peak-gene links
+# top5.p <- joined.p %>% top_n(5, peak_gene.r)
+# top5.p.1 <- top5.p[,1:32]
+# top5.p.2 <- top5.p[,c(1:16, 33:48)]
+# # long format
+# top5.p.long.1 <- reshape2::melt(top5.p.1 , id.vars = colnames(top5.p)[1:16], variable.name = "cluster.RNA", value.name = "value.RNA")
+# top5.p.long.2 <- reshape2::melt(top5.p.2, id.vars = colnames(top5.p)[1:16], variable.name = "cluster.ATAC", value.name = "value.ATAC")
+# top5.p.both <- cbind(top5.p.long.1, top5.p.long.2[,17:ncol(top5.p.long.2)])
+# 
+# # assign informative colors to the cell type clusters
+# cols <- c("#FF6600", "#FF0000", "#CC0033", "#99FFFF", "#0099FF", "#33FF33", "#FF00FF", "#990000", "#FF3300", "#FFCC66", "#660066", "#0000FF", "#FFFF33", "#FF6666", "#FF9933", "#66FF99")
+# 
+# ggplot(top5.p.both, aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Peak-gene link with highest correlation coefficient") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   geom_label_repel(data=top5.p.both[top5.p.both$TF.name == "YY1",], aes(label=as.factor(TF.name), alpha=0.7), size=5, force=1.3, max.overlaps = 30) + 
+#   scale_color_manual(values = cols)
+# 
+# table(joined.p$TF.ID)
+# 
+# 
+# ggplot(top5.p.both, aes(x = value.RNA, y = value.ATAC, col = cluster.RNA, label=TF.name)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log 10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 10 most correlated peak-genes") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   geom_text(hjust=0, vjust=0)
+# 
+# # set new ids
+# new.ids <- as.character(c(1:5))
+# top5.p.both$id <- new.ids
+# names(new.ids) <- levels(top5.p.both$id)
+# top5.p.both
+# 
+# ggplot(top5.p.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   geom_label_repel(data=top5.p.both[1:5,], aes(label=as.factor(round(peak_gene.r, 4))), size=5)
+# 
+# 
+# 
+# p1 <- ggplot(top5.p.both %>% dplyr::filter(id == "1"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "TTop 1 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p2 <-ggplot(top5.p.both %>% dplyr::filter(id == "2"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p3 <-  ggplot(top5.p.both %>% dplyr::filter(id == "3"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p4 <-ggplot(top5.p.both %>% dplyr::filter(id == "4"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p5 <-ggplot(top5.p.both %>% dplyr::filter(id == "5"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# 
+# ggarrange(p1,p2,p3,p4,p5)
+# p1
+# p2
+# 
+# 
+# 
+# # Spearman:
+# 
+# # select top5 most significant peak-gene links
+# ## add also the pearson coefficient as a columns
+# top5.s <- joined.s %>% top_n(5, peak_gene.r)
+# top5.s.1 <- top5.s[,1:32]
+# top5.s.2 <- top5.s[,c(1:16, 33:48)]
+# # long format
+# top5.s.long.1 <- reshape2::melt(top5.s.1 , id.vars = colnames(top5.s)[1:16], variable.name = "cluster.RNA", value.name = "value.RNA")
+# top5.s.long.2 <- reshape2::melt(top5.s.2, id.vars = colnames(top5.s)[1:16], variable.name = "cluster.ATAC", value.name = "value.ATAC")
+# top5.s.both <- cbind(top5.s.long.1, top5.s.long.2[,17:ncol(top5.s.long.2)])
+# 
+# # set new ids
+# new.ids <- as.character(c(1:5))
+# top5.s.both$id <- new.ids
+# names(new.ids) <- levels(top5.s.both$id)
+# new.ids
+# 
+# ggplot(top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   geom_label_repel(data=top5.s.both[1:5,], aes(label=as.factor(round(peak_gene.r, 4))), size=5)
+# 
+# 
+# ggplot(top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Peak-gene link with highest correlation coefficient") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# 
+# p1 <- ggplot(top5.s.both %>% dplyr::filter(id == "1"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 1 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p2 <-ggplot(top5.s.both %>% dplyr::filter(id == "2"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p3 <-  ggplot(top5.s.both %>% dplyr::filter(id == "3"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p4 <-ggplot(top5.s.both %>% dplyr::filter(id == "4"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# p5 <-ggplot(top5.s.both %>% dplyr::filter(id == "5"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
+#   geom_point(alpha = 0.75, size = 2) + 
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link") + 
+#   theme_classic() + 
+#   theme(plot.title = element_text(hjust = 0.5)) + 
+#   scale_color_manual(values = cols)
+# 
+# ggarrange(p1,p2,p3,p4,p5)
+# p1
+# p4
+# p5
 
-tf.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("TF.ID")) 
-gene.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("gene.name"))
-peak.shared.p.s <- inner_join(tf.peak.gene.p, tf.peak.gene.s, by = c("peak.ID"))
-
-View(tf.peak.gene.p)
-tf.peak.gene.s
-
-tf.shared.p.s
-gene.shared.p.s
-peak.shared.p.s
-
-
-# CHECK IF ASSUMPTIONS ARE HELD!
-# Pearson:
-
-# select top5 most significant peak-gene links
-top5.p <- joined.p %>% top_n(5, peak_gene.r)
-top5.p.1 <- top5.p[,1:32]
-top5.p.2 <- top5.p[,c(1:16, 33:48)]
-# long format
-top5.p.long.1 <- reshape2::melt(top5.p.1 , id.vars = colnames(top5.p)[1:16], variable.name = "cluster.RNA", value.name = "value.RNA")
-top5.p.long.2 <- reshape2::melt(top5.p.2, id.vars = colnames(top5.p)[1:16], variable.name = "cluster.ATAC", value.name = "value.ATAC")
-top5.p.both <- cbind(top5.p.long.1, top5.p.long.2[,17:ncol(top5.p.long.2)])
-
-# assign informative colors to the cell type clusters
-cols <- c("#FF6600", "#FF0000", "#CC0033", "#99FFFF", "#0099FF", "#33FF33", "#FF00FF", "#990000", "#FF3300", "#FFCC66", "#660066", "#0000FF", "#FFFF33", "#FF6666", "#FF9933", "#66FF99")
-
-ggplot(top5.p.both, aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Peak-gene link with highest correlation coefficient") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  geom_label_repel(data=top5.p.both[top5.p.both$TF.name == "YY1",], aes(label=as.factor(TF.name), alpha=0.7), size=5, force=1.3, max.overlaps = 30) + 
-  scale_color_manual(values = cols)
-
-table(joined.p$TF.ID)
-
-
-ggplot(top5.p.both, aes(x = value.RNA, y = value.ATAC, col = cluster.RNA, label=TF.name)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log 10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 10 most correlated peak-genes") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  geom_text(hjust=0, vjust=0)
-
-# set new ids
-new.ids <- as.character(c(1:5))
-top5.p.both$id <- new.ids
-names(new.ids) <- levels(top5.p.both$id)
-top5.p.both
-
-ggplot(top5.p.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  geom_label_repel(data=top5.p.both[1:5,], aes(label=as.factor(round(peak_gene.r, 4))), size=5)
-
-
-
-p1 <- ggplot(top5.p.both %>% dplyr::filter(id == "1"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "TTop 1 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p2 <-ggplot(top5.p.both %>% dplyr::filter(id == "2"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p3 <-  ggplot(top5.p.both %>% dplyr::filter(id == "3"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p4 <-ggplot(top5.p.both %>% dplyr::filter(id == "4"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p5 <-ggplot(top5.p.both %>% dplyr::filter(id == "5"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-
-ggarrange(p1,p2,p3,p4,p5)
-p1
-p2
-
-
-
-# Spearman:
-
-# select top5 most significant peak-gene links
-## add also the pearson coefficient as a columns
-top5.s <- joined.s %>% top_n(5, peak_gene.r)
-top5.s.1 <- top5.s[,1:32]
-top5.s.2 <- top5.s[,c(1:16, 33:48)]
-# long format
-top5.s.long.1 <- reshape2::melt(top5.s.1 , id.vars = colnames(top5.s)[1:16], variable.name = "cluster.RNA", value.name = "value.RNA")
-top5.s.long.2 <- reshape2::melt(top5.s.2, id.vars = colnames(top5.s)[1:16], variable.name = "cluster.ATAC", value.name = "value.ATAC")
-top5.s.both <- cbind(top5.s.long.1, top5.s.long.2[,17:ncol(top5.s.long.2)])
-
-# set new ids
-new.ids <- as.character(c(1:5))
-top5.s.both$id <- new.ids
-names(new.ids) <- levels(top5.s.both$id)
-new.ids
-
-ggplot(top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  geom_label_repel(data=top5.s.both[1:5,], aes(label=as.factor(round(peak_gene.r, 4))), size=5)
-
-
-ggplot(top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Peak-gene link with highest correlation coefficient") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-
-p1 <- ggplot(top5.s.both %>% dplyr::filter(id == "1"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 1 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p2 <-ggplot(top5.s.both %>% dplyr::filter(id == "2"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p3 <-  ggplot(top5.s.both %>% dplyr::filter(id == "3"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p4 <-ggplot(top5.s.both %>% dplyr::filter(id == "4"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p5 <-ggplot(top5.s.both %>% dplyr::filter(id == "5"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-
-ggarrange(p1,p2,p3,p4,p5)
-p1
-p4
-p5
-
-# check links overlaps
-
-# merge links
+#########################
+# ALL PEAK - GENE LINKS #
+#########################
 
 # redoit but with all peak-gene links and putting pearson and spearman correlation coefficients in the same dataframe
-# extract peak-genes from GRN ran with Spearman correlation 
+# extract peak-genes from GRN ran with Spearman correlation
 pg.links <- GRN.s@connections$peak_genes$`0` # IMPORTANT LINE
-colnames(pg.links)[4] <- "spearman.r" 
-# add pearson correlation values
+colnames(pg.links)[4] <- "spearman.r"
+# add pearson correlation and rawp values
 pg.links$pearson.r <- GRN.p@connections$peak_genes$`0`$peak_gene.r
+pg.links$pearson.p_raw <- GRN.p@connections$peak_genes$`0`$peak_gene.p_raw
 
 # add id column
 pg.links$id <- as.character(c(1:nrow(pg.links)))
 
 # add gene expresion and peak accessibility counts for each connection
-pg.joined.s <- pg.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.p, by = "peak.ID")
+pg.joined.s <- pg.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
+pg.joined.s$id <- NULL
 
 ############
-# SPEARMAN # 
+# SPEARMAN #
 ############
 
 # select top5 most significant peak-gene links
@@ -283,50 +285,76 @@ pg.top5.s.both <- cbind(pg.top5.s.long.1, pg.top5.s.long.2[,8:ncol(pg.top5.s.lon
 pg.top5.s.both
 
 # set new ids
-new.ids <- as.character(c(1:5))
-names(new.ids) <- levels(pg.top5.s.both$id)
-new.ids
-
-ggplot(pg.top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5))
+new.ids <- rep(as.character(c(1:5)), nrow(pg.top5.s.both)/5)
+pg.top5.s.both$ids <- new.ids
 
 
-p1 <- ggplot(pg.top5.s.both %>% dplyr::filter(id == "316796"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 1 most correlated peak-gene link. Id: 316796") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p2 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "380465"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link. Id: 380465") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p3 <-  ggplot(pg.top5.s.both %>% dplyr::filter(id == "484736"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link. Id: 484736") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p4 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "714900"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link. Id: 714900") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p5 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "714906"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link. Id: 714906") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
+corMethod <- "spearman"
 
-ggarrange(p1,p2,p3,p4,p5)
-p1
+cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
+digits_round <- 3
+pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(gene.ENSEMBL) %>% first(), 
+                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(spearman.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
+                     "\n", "# eGRN link: highest correlation")
+
+x_min = min(-0.01, min(pg.top5.s.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(pg.top5.s.both$value.ATAC, na.rm = TRUE))
+
+pgs1 <- ggplot(pg.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+  geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
+  #geom_point(size = rel(0.5)) + 
+  geom_point(alpha = 0.75, size = 2) + 
+  xlim(x_min, NA) + ylim(y_min, NA) +
+  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values = cols,
+                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
+                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
+                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+
+ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_peakgene_top1link.png", pgs1, device = "png")
+
+# ggplot(pg.top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# 
+# p1 <- ggplot(pg.top5.s.both %>% dplyr::filter(id == "316796"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 1 most correlated peak-gene link. Id: 316796") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p2 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "380465"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link. Id: 380465") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p3 <-  ggplot(pg.top5.s.both %>% dplyr::filter(id == "484736"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link. Id: 484736") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p4 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "714900"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link. Id: 714900") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p5 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "714906"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "SPEARMAN CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link. Id: 714906") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# 
+# ggarrange(p1,p2,p3,p4,p5)
+# p1
 
 ###########
 # PEARSON #
@@ -344,56 +372,8 @@ pg.top5.s.both <- cbind(pg.top5.s.long.1, pg.top5.s.long.2[,8:ncol(pg.top5.s.lon
 pg.top5.s.both
 
 # set new ids
-new.ids <- as.character(c(1:5))
-names(new.ids) <- levels(pg.top5.s.both$id)
-new.ids
-
-ggplot(pg.top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-p1 <- ggplot(pg.top5.s.both %>% dplyr::filter(id == "146686"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "TTop 1 most correlated peak-gene link. Id: 146686") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p2 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "18914"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link. Id: 18914") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p3 <-  ggplot(pg.top5.s.both %>% dplyr::filter(id == "441623"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link. Id: 441623") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p4 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "634342"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link. Id: 634342") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-p5 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "757121"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) + 
-  geom_point(alpha = 0.75, size = 2) + 
-  labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link. Id: 757121") + 
-  theme_classic() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
-
-ggarrange(p1,p2,p3,p4,p5)
-p1
-
-# TF-peak links
-
-###############
-# FINAL PLOTS #
-###############
+new.ids <- rep(as.character(c(1:5)), nrow(pg.top5.s.both)/5)
+pg.top5.s.both$idp <- new.ids
 
 # peak-gene links #
 
@@ -403,46 +383,197 @@ corMethod <- "pearson"
 
 cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
 digits_round <- 3
-pg.titleCur = paste0("Peak=", top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak.ID) %>% first(), ", Gene=", top5.p.both %>% dplyr::filter(id == "1") %>% pull(gene.ENSEMBL) %>% first(), 
-                  ":\nCor = ", round(top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(top5.p.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
-                  "\n", "# eGRN link: highest correlation")
+pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(peak.ID) %>% first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(gene.ENSEMBL) %>% first(), 
+                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(pearson.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(pearson.p_raw) %>% first(), digits_round),
+                     "\n", "# eGRN link: highest correlation")
 
-x_min = min(-0.01, min(top5.p.both$value.RNA, na.rm = TRUE))
-y_min = min(-0.01, min(top5.p.both$value.ATAC, na.rm = TRUE))
+x_min = min(-0.01, min(pg.top5.s.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(pg.top5.s.both$value.ATAC, na.rm = TRUE))
 
-pgp1 <- ggplot(top5.p.both %>% dplyr::filter(id == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+pgp1 <- ggplot(pg.top5.s.both %>% dplyr::filter(idp == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
   geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  labs(x = "(Normalized) gene expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
+  scale_color_manual(values = cols,
+                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
+                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
+                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
 
+ggsave("/g/scb/zaugg/deuner/figs/pearson_corr_plot_peakgene_top1link.png", pgp1, device = "png")
 
-# correlation: spearman
+# ggplot(pg.top5.s.both, aes(x = log10(value.RNA), y = value.ATAC, col = id)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Id", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-genes") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# 
+# p1 <- ggplot(pg.top5.s.both %>% dplyr::filter(id == "146686"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "TTop 1 most correlated peak-gene link. Id: 146686") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p2 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "18914"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 2 most correlated peak-gene link. Id: 18914") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p3 <-  ggplot(pg.top5.s.both %>% dplyr::filter(id == "441623"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 3 most correlated peak-gene link. Id: 441623") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p4 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "634342"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 4 most correlated peak-gene link. Id: 634342") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# p5 <-ggplot(pg.top5.s.both %>% dplyr::filter(id == "757121"), aes(x = log10(value.RNA), y = value.ATAC, col = cluster.RNA)) +
+#   geom_point(alpha = 0.75, size = 2) +
+#   labs(x = "Gene Expression (SCT) log10", y = "Peak Accessibility", col = "Cluster / Cell Type", title = "PEARSON CORRELATION: Peak-Gene links", caption = "Top 5 most correlated peak-gene link. Id: 757121") +
+#   theme_classic() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_color_manual(values = cols)
+# 
+# ggarrange(p1,p2,p3,p4,p5)
+# p1
+
+#################
+# TF-PEAK LINKS #
+#################
+
+############
+# SPEARMAN #
+############
+
+# redoit but with all TF-peak links and putting pearson and spearman correlation coefficients in the same dataframe
+# extract TF-peak from GRN ran with Spearman correlation
+tfp.links <- GRN.s@connections$TF_peaks$`0`$main # IMPORTANT LINE
+colnames(tfp.links)[3] <- "spearman.r"
+TF.ENSEMBL = GRN.s@annotation$TFs %>% dplyr::select(TF.ID, TF.ENSEMBL)
+tfp.links <- inner_join(tfp.links, TF.ENSEMBL, by = "TF.ID")
+names(tfp.links)[9] <- "gene.ENSEMBL"
+
+# add gene expresion and peak accessibility counts for each connection
+tfp.joined.s <- tfp.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
+
+# select top5 most significant peak-gene links
+## add also the pearson coefficient as a columns
+tfp.top5.s <- tfp.joined.s %>% top_n(5, spearman.r)
+tfp.top5.s.1 <- tfp.top5.s[,1:25]
+tfp.top5.s.2 <- tfp.top5.s[,c(1:9, 26:41)]
+# long format
+tfp.top5.s.long.1 <- reshape2::melt(tfp.top5.s.1 , id.vars = colnames(tfp.top5.s)[1:9], variable.name = "cluster.RNA", value.name = "value.RNA")
+tfp.top5.s.long.2 <- reshape2::melt(tfp.top5.s.2, id.vars = colnames(tfp.top5.s)[1:9], variable.name = "cluster.ATAC", value.name = "value.ATAC")
+tfp.top5.s.both <- cbind(tfp.top5.s.long.1, tfp.top5.s.long.2[,10:ncol(tfp.top5.s.long.2)])
+tfp.top5.s.both %>% names
+
+# set new ids
+new.ids <- rep(as.character(c(1:5)), nrow(tfp.top5.s.both)/5)
+tfp.top5.s.both$ids <- new.ids
+
 
 corMethod <- "spearman"
 
 cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
 digits_round <- 3
-pg.titleCur = paste0("Peak=", top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak.ID) %>% first(), ", Gene=", top5.s.both %>% dplyr::filter(id == "1") %>% pull(gene.ENSEMBL) %>% first(), 
-                     ":\nCor = ", round(top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(top5.s.both %>% dplyr::filter(id == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
+tfp.titleCur = paste0("Peak=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% dplyr::first(), ", TF=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF.ID) %>% dplyr::first(), 
+                     ":\nCor = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(spearman.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF_peak.fdr) %>% dplyr::first(), digits_round),
                      "\n", "# eGRN link: highest correlation")
 
-x_min = min(-0.01, min(top5.s.both$value.RNA, na.rm = TRUE))
-y_min = min(-0.01, min(top5.s.both$value.ATAC, na.rm = TRUE))
+x_min = min(-0.01, min(tfp.top5.s.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(tfp.top5.s.both$value.ATAC, na.rm = TRUE))
 
-pgs1 <- ggplot(top5.s.both %>% dplyr::filter(id == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+tfps1 <- ggplot(tfp.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
   geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  labs(x = "(Normalized) TF expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = tfp.titleCur) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  scale_color_manual(values = cols)
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values = cols,
+                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
+                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
+                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+
+ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_TFpeak_top1link.png", tfps1, device = "png")
 
 
-# TF-peak links # 
+
+###########
+# PEARSON #
+###########
+
+# redoit but with all TF-peak links and putting pearson and spearman correlation coefficients in the same dataframe
+# extract TF-peak from GRN ran with Spearman correlation
+tfp.links <- GRN.p@connections$TF_peaks$`0`$main # IMPORTANT LINE
+colnames(tfp.links)[3] <- "pearson.r"
+TF.ENSEMBL = GRN.s@annotation$TFs %>% dplyr::select(TF.ID, TF.ENSEMBL)
+tfp.links <- inner_join(tfp.links, TF.ENSEMBL, by = "TF.ID")
+names(tfp.links)[9] <- "gene.ENSEMBL"
+
+# add gene expresion and peak accessibility counts for each connection
+tfp.joined.s <- tfp.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
+
+# select top5 most significant peak-gene links
+## add also the pearson coefficient as a columns
+tfp.top5.s <- tfp.joined.s %>% top_n(5, pearson.r)
+tfp.top5.s.1 <- tfp.top5.s[,1:25]
+tfp.top5.s.2 <- tfp.top5.s[,c(1:9, 26:41)]
+# long format
+tfp.top5.s.long.1 <- reshape2::melt(tfp.top5.s.1 , id.vars = colnames(tfp.top5.s)[1:9], variable.name = "cluster.RNA", value.name = "value.RNA")
+tfp.top5.s.long.2 <- reshape2::melt(tfp.top5.s.2, id.vars = colnames(tfp.top5.s)[1:9], variable.name = "cluster.ATAC", value.name = "value.ATAC")
+tfp.top5.s.both <- cbind(tfp.top5.s.long.1, tfp.top5.s.long.2[,10:ncol(tfp.top5.s.long.2)])
+tfp.top5.s.both %>% names
+
+# set new ids
+new.ids <- rep(as.character(c(1:5)), nrow(tfp.top5.s.both)/5)
+tfp.top5.s.both$ids <- new.ids
+
+
+corMethod <- "pearson"
+
+cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
+digits_round <- 3
+tfp.titleCur = paste0("Peak=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% dplyr::first(), ", TF=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF.ID) %>% dplyr::first(), 
+                      ":\nCor = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(pearson.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF_peak.fdr) %>% dplyr::first(), digits_round),
+                      "\n", "# eGRN link: highest correlation")
+
+x_min = min(-0.01, min(tfp.top5.s.both$value.RNA, na.rm = TRUE))
+y_min = min(-0.01, min(tfp.top5.s.both$value.ATAC, na.rm = TRUE))
+
+tfps1 <- ggplot(tfp.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+  geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
+  #geom_point(size = rel(0.5)) + 
+  geom_point(alpha = 0.75, size = 2) + 
+  xlim(x_min, NA) + ylim(y_min, NA) +
+  labs(x = "(Normalized) TF expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = tfp.titleCur) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values = cols,
+                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
+                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
+                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+
+ggsave("/g/scb/zaugg/deuner/figs/pearson_corr_plot_TFpeak_top1link.png", tfps1, device = "png")
+
+######################
+# DISTRIBUTION PLOTS #
+######################
+
+counts <- counts.s
+peaks <- peaks.s
+
+head(counts)
+head(peaks)
+
+hist(counts$diff___immature.neuron, bins = 250)
