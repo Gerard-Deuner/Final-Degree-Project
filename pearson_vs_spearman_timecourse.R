@@ -64,17 +64,21 @@ timecourse.s <- qread(paste0(path,"/tmp/",seuratFile))
 # GRN.s@connections$all.filtered[["0"]]
 # connections.s <- as.data.frame(GRN.s@connections$all.filtered[["0"]])
 
+order <- c("diff___tiny", "hiPSC", "hiPSC___start.diff", "diff___hiPSC_like", "diff___NPC_like", "diff", "diff___immature.neuron", "neuron___excitatory", 
+          "neuron___development_1", "neuron___development_2", "mature.neuron___adhesion", "neuron___mature.neuron", "mature.neuron___small_1",
+          "mature.neuron___small_2", "microglia_1", "microglia_2")
+
 # SCT counts here
 GRN.s@data[["RNA"]][["counts"]]
 counts.s <- as.data.frame(GRN.s@data[["RNA"]][["counts"]])
 counts.s$gene.ENSEMBL <- rownames(counts.s)
-counts.s
+counts.s <- counts.s[,c(order, "gene.ENSEMBL")]
 
 # norm ATAC counts here
 GRN.s@data[["peaks"]][["counts"]]
 peaks.s <- as.data.frame(GRN.s@data[["peaks"]][["counts"]])
 peaks.s$peak.ID <- rownames(peaks.s)
-peaks.s
+peaks.s <- peaks.s[,c(order, "peak.ID")]
 
 # # connections + counts
 # joined.s <- connections.s %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
@@ -256,11 +260,14 @@ peaks.s
 
 # redoit but with all peak-gene links and putting pearson and spearman correlation coefficients in the same dataframe
 # extract peak-genes from GRN ran with Spearman correlation
-pg.links <- GRN.s@connections$peak_genes$`0` # IMPORTANT LINE
+#pg.links <- GRN.s@connections$peak_genes$`0` # IMPORTANT LINE
+col.names <- c("peak.ID", "gene.ENSEMBL", "peak_gene.distance", "peak_gene.r", "peak_gene.p_raw") 
+pg.links <- GRN.s@connections$all.filtered$`0`
+pg.links <- pg.links[col.names]
 colnames(pg.links)[4] <- "spearman.r"
 # add pearson correlation and rawp values
-pg.links$pearson.r <- GRN.p@connections$peak_genes$`0`$peak_gene.r
-pg.links$pearson.p_raw <- GRN.p@connections$peak_genes$`0`$peak_gene.p_raw
+pg.links$pearson.r <- rep(0, nrow(pg.links))#GRN.p@connections$peak_genes$`0`$peak_gene.r
+pg.links$pearson.p_raw <- rep(0, nrow(pg.links))#GRN.p@connections$peak_genes$`0`$peak_gene.p_raw
 
 # add id column
 pg.links$id <- as.character(c(1:nrow(pg.links)))
@@ -278,6 +285,7 @@ pg.joined.s$id <- NULL
 pg.top5.s <- pg.joined.s %>% top_n(5, spearman.r)
 pg.top5.s.1 <- pg.top5.s[,1:23]
 pg.top5.s.2 <- pg.top5.s[,c(1:7, 24:39)]
+
 # long format
 pg.top5.s.long.1 <- reshape2::melt(pg.top5.s.1 , id.vars = colnames(pg.top5.s)[1:7], variable.name = "cluster.RNA", value.name = "value.RNA")
 pg.top5.s.long.2 <- reshape2::melt(pg.top5.s.2, id.vars = colnames(pg.top5.s)[1:7], variable.name = "cluster.ATAC", value.name = "value.ATAC")
@@ -291,10 +299,13 @@ pg.top5.s.both$ids <- new.ids
 
 corMethod <- "spearman"
 
-cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
+cols <- c("gray", "#FFFF00", "#FFCC33", "#FF9966", "#FF6633", "red", "#990033", "#996699", "#9933FF", "#6600CC", "#330099", "#3333FF","#0000FF", "#3366FF" , "#00C000", "green")
+vals <- c("Diff - small", "hiPSC", "Start Diff", "Diff - hiPSC-like", "Diff - NPC-like", "Diff", "Diff - Immature Neuron", "Excitatory Neuron", 
+          "Neuron Development 1", "Neuron Development 2", "Mature Neuron - adhesion", "Mature Neuron", "Mature Neuron - small 1",
+          "Mature Neuron - small 2", "Microglia 1", "Microglia 2")
 digits_round <- 3
-pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(gene.ENSEMBL) %>% first(), 
-                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(spearman.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak_gene.p_raw) %>% first(), digits_round),
+pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% dplyr::first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(gene.ENSEMBL) %>% dplyr::first(), 
+                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(spearman.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak_gene.p_raw) %>% dplyr::first(), digits_round),
                      "\n", "# eGRN link: highest correlation")
 
 x_min = min(-0.01, min(pg.top5.s.both$value.RNA, na.rm = TRUE))
@@ -305,13 +316,11 @@ pgs1 <- ggplot(pg.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, 
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) gene exrepssion", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  labs(x = "(Normalized) gene expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 10)) + 
   scale_color_manual(values = cols,
-                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
-                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
-                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+                     labels = vals)
 
 ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_peakgene_top1link.png", pgs1, device = "png")
 
@@ -360,6 +369,24 @@ ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_peakgene_top1link.png", pgs1
 # PEARSON #
 ###########
 
+# redoit but with all peak-gene links and putting pearson and spearman correlation coefficients in the same dataframe
+# extract peak-genes from GRN ran with Spearman correlation
+#pg.links <- GRN.s@connections$peak_genes$`0` # IMPORTANT LINE
+col.names <- c("peak.ID", "gene.ENSEMBL", "peak_gene.distance", "peak_gene.r", "peak_gene.p_raw") 
+pg.links <- GRN.p@connections$all.filtered$`0`
+pg.links <- pg.links[col.names]
+colnames(pg.links)[4] <- "pearson.r"
+# add pearson correlation and rawp values
+pg.links$spearman.r <- rep(0, nrow(pg.links)) #GRN.p@connections$peak_genes$`0`$peak_gene.r
+pg.links$spearman.p_raw <- rep(0, nrow(pg.links)) #GRN.p@connections$peak_genes$`0`$peak_gene.p_raw
+
+# add id column
+pg.links$id <- as.character(c(1:nrow(pg.links)))
+
+# add gene expresion and peak accessibility counts for each connection
+pg.joined.s <- pg.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inner_join(peaks.s, by = "peak.ID")
+pg.joined.s$id <- NULL
+
 # select top5 most significant peak-gene links
 ## add also the pearson coefficient as a columns
 pg.top5.s <- pg.joined.s %>% top_n(5, pearson.r)
@@ -381,10 +408,9 @@ pg.top5.s.both$idp <- new.ids
 
 corMethod <- "pearson"
 
-cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
 digits_round <- 3
-pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(peak.ID) %>% first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(gene.ENSEMBL) %>% first(), 
-                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(pearson.r) %>% first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(pearson.p_raw) %>% first(), digits_round),
+pg.titleCur = paste0("Peak=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(peak.ID) %>% dplyr::first(), ", Gene=", pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(gene.ENSEMBL) %>% dplyr::first(), 
+                     ":\nCor = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(pearson.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(pg.top5.s.both %>% dplyr::filter(idp == "1") %>% pull(peak_gene.p_raw) %>% dplyr::first(), digits_round),
                      "\n", "# eGRN link: highest correlation")
 
 x_min = min(-0.01, min(pg.top5.s.both$value.RNA, na.rm = TRUE))
@@ -395,13 +421,11 @@ pgp1 <- ggplot(pg.top5.s.both %>% dplyr::filter(idp == "1"), aes(x = value.RNA, 
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) gene expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
+  labs(x = "", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = pg.titleCur) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
+  theme(plot.title = element_text(hjust = 0.5, size = 10)) + 
   scale_color_manual(values = cols,
-                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
-                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
-                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+                     labels = vals)
 
 ggsave("/g/scb/zaugg/deuner/figs/pearson_corr_plot_peakgene_top1link.png", pgp1, device = "png")
 
@@ -456,7 +480,12 @@ ggsave("/g/scb/zaugg/deuner/figs/pearson_corr_plot_peakgene_top1link.png", pgp1,
 
 # redoit but with all TF-peak links and putting pearson and spearman correlation coefficients in the same dataframe
 # extract TF-peak from GRN ran with Spearman correlation
-tfp.links <- GRN.s@connections$TF_peaks$`0`$main # IMPORTANT LINE
+#tfp.links <- GRN.s@connections$TF_peaks$`0`$main # IMPORTANT LINE
+col.names <- c("TF.ID",                  "TF_peak.r_bin",          "TF_peak.r",             
+               "TF_peak.fdr",            "TF.name",       "peak.ID",               
+               "TF_peak.fdr_direction",  "TF_peak.connectionType")
+tfp.links <- GRN.s@connections$all.filtered$`0`
+tfp.links <- tfp.links[,col.names]
 colnames(tfp.links)[3] <- "spearman.r"
 TF.ENSEMBL = GRN.s@annotation$TFs %>% dplyr::select(TF.ID, TF.ENSEMBL)
 tfp.links <- inner_join(tfp.links, TF.ENSEMBL, by = "TF.ID")
@@ -468,6 +497,7 @@ tfp.joined.s <- tfp.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inne
 # select top5 most significant peak-gene links
 ## add also the pearson coefficient as a columns
 tfp.top5.s <- tfp.joined.s %>% top_n(5, spearman.r)
+tfp.top5.s <- tfp.top5.s[1:5,]
 tfp.top5.s.1 <- tfp.top5.s[,1:25]
 tfp.top5.s.2 <- tfp.top5.s[,c(1:9, 26:41)]
 # long format
@@ -480,10 +510,11 @@ tfp.top5.s.both %>% names
 new.ids <- rep(as.character(c(1:5)), nrow(tfp.top5.s.both)/5)
 tfp.top5.s.both$ids <- new.ids
 
+tfp.top5.s.both$TF.ID
+
 
 corMethod <- "spearman"
 
-cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
 digits_round <- 3
 tfp.titleCur = paste0("Peak=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% dplyr::first(), ", TF=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF.ID) %>% dplyr::first(), 
                      ":\nCor = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(spearman.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF_peak.fdr) %>% dplyr::first(), digits_round),
@@ -497,13 +528,11 @@ tfps1 <- ggplot(tfp.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) TF expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = tfp.titleCur) + 
+  labs(x = "(Normalized) TF expression", y = "", col = "Cluster / Cell Type", title = tfp.titleCur) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 10)) +
   scale_color_manual(values = cols,
-                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
-                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
-                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+                     labels = vals)
 
 ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_TFpeak_top1link.png", tfps1, device = "png")
 
@@ -515,7 +544,12 @@ ggsave("/g/scb/zaugg/deuner/figs/spearman_corr_plot_TFpeak_top1link.png", tfps1,
 
 # redoit but with all TF-peak links and putting pearson and spearman correlation coefficients in the same dataframe
 # extract TF-peak from GRN ran with Spearman correlation
-tfp.links <- GRN.p@connections$TF_peaks$`0`$main # IMPORTANT LINE
+#tfp.links <- GRN.p@connections$TF_peaks$`0`$main # IMPORTANT LINE
+col.names <- c("TF.ID",                  "TF_peak.r_bin",          "TF_peak.r",             
+               "TF_peak.fdr",            "TF.name",       "peak.ID",               
+               "TF_peak.fdr_direction",  "TF_peak.connectionType")
+tfp.links <- GRN.p@connections$all.filtered$`0`
+tfp.links <- tfp.links[,col.names]
 colnames(tfp.links)[3] <- "pearson.r"
 TF.ENSEMBL = GRN.s@annotation$TFs %>% dplyr::select(TF.ID, TF.ENSEMBL)
 tfp.links <- inner_join(tfp.links, TF.ENSEMBL, by = "TF.ID")
@@ -527,6 +561,7 @@ tfp.joined.s <- tfp.links %>% inner_join(counts.s, by = "gene.ENSEMBL") %>% inne
 # select top5 most significant peak-gene links
 ## add also the pearson coefficient as a columns
 tfp.top5.s <- tfp.joined.s %>% top_n(5, pearson.r)
+tfp.top5.s <- tfp.top5.s[1:5, ]
 tfp.top5.s.1 <- tfp.top5.s[,1:25]
 tfp.top5.s.2 <- tfp.top5.s[,c(1:9, 26:41)]
 # long format
@@ -542,7 +577,6 @@ tfp.top5.s.both$ids <- new.ids
 
 corMethod <- "pearson"
 
-cols <- c("#990033", "#3333FF", "#996699", "#FF9966", "#FFCC33", "red", "#00C000", "#0000FF", "#330099", "#9933FF", "green", "#FFFF00", "#FF6633", "#3366FF", "#6600CC", "gray")
 digits_round <- 3
 tfp.titleCur = paste0("Peak=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(peak.ID) %>% dplyr::first(), ", TF=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF.ID) %>% dplyr::first(), 
                       ":\nCor = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(pearson.r) %>% dplyr::first(), digits_round), " (", corMethod, "), raw p-value = ", round(tfp.top5.s.both %>% dplyr::filter(ids == "1") %>% pull(TF_peak.fdr) %>% dplyr::first(), digits_round),
@@ -551,29 +585,81 @@ tfp.titleCur = paste0("Peak=", tfp.top5.s.both %>% dplyr::filter(ids == "1") %>%
 x_min = min(-0.01, min(tfp.top5.s.both$value.RNA, na.rm = TRUE))
 y_min = min(-0.01, min(tfp.top5.s.both$value.ATAC, na.rm = TRUE))
 
-tfps1 <- ggplot(tfp.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
+tfpp1 <- ggplot(tfp.top5.s.both %>% dplyr::filter(ids == "1"), aes(x = value.RNA, y = value.ATAC, col = cluster.RNA)) + 
   geom_smooth(method = "lm", formula = "y ~ x", col = "black", na.rm = TRUE) + 
   #geom_point(size = rel(0.5)) + 
   geom_point(alpha = 0.75, size = 2) + 
   xlim(x_min, NA) + ylim(y_min, NA) +
-  labs(x = "(Normalized) TF expression", y = "(Normalized) peak accessibility", col = "Cluster / Cell Type", title = tfp.titleCur) + 
+  labs(x = "", y = "", col = "Cluster / Cell Type", title = tfp.titleCur) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 10)) +
   scale_color_manual(values = cols,
-                     labels = c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
-                                "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
-                                "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small"))
+                     labels = vals)
 
 ggsave("/g/scb/zaugg/deuner/figs/pearson_corr_plot_TFpeak_top1link.png", tfps1, device = "png")
 
-######################
-# DISTRIBUTION PLOTS #
-######################
+###############
+# FINAL PLOTS #
+###############
+
+fp <- ggarrange(pgp1, pgs1, tfpp1, tfps1, ncol = 2, nrow = 2, common.legend = TRUE, labels = c("A", "B", "C", "D"), legend = "right")
+fp
+ggsave("/g/scb/zaugg/deuner/figs/correlationplots.png", fp, device = "png")
+
 
 counts <- counts.s
 peaks <- peaks.s
-
 head(counts)
-head(peaks)
 
-hist(counts$diff___immature.neuron, bins = 250)
+counts.long <- tidyr::pivot_longer(counts, names(counts)[1:16], names_to = "cluster", values_to = "expression")
+peaks.long <- tidyr::pivot_longer(peaks, names(peaks)[1:16], names_to = "cluster", values_to = "accessibility")
+
+
+dist <- ggplot(counts.long, aes(expression)) + 
+  geom_density(mapping = aes(fill = "red"), alpha = .2, col = "#333333", show.legend = TRUE) + 
+  geom_density(peaks.long, mapping = aes(accessibility, fill = "#00CCFF"), alpha = .2, col = "#333333", show.legend = TRUE) + 
+  xlim(c(0,25)) + 
+  labs(y = "Density", x = "Activity") + 
+  theme_classic() +
+  #scale_fill_identity(name = 'Activity', guide = 'legend',labels = c("Gene Expression", "Peak Accessibility")) +
+  scale_fill_manual(name = 'Activity', 
+                      values =c('red'='red','#00CCFF'='#00CCFF'), labels = c("Gene Expression", "Peak Accessibility"))
+
+timecourse.s@meta.data$celltype_wnn %>% levels()
+# vals <- c("Diff - Immature Neuron", "Mature Neuron - small 1", "Excitatory Neuron", "Diff - hiPSC-like", "Start Diff", "Diff",
+#           "Microglia 1", "Mature Neuron", "Mature Neuron - adhesion", "Neuron Development 1", "Microglia 2",
+#           "hiPSC", "Diff - NPC-like", "Mature Neuron - small 2", "Neuron Development 2", "Diff - small")
+nms <- c("hiPSC",                    "diff___NPC_like",          "diff",                     "diff___immature.neuron",
+         "neuron___mature.neuron",   "neuron___excitatory",      "diff___hiPSC_like",        "mature.neuron___adhesion",
+         "hiPSC___start.diff",       "microglia_1",              "microglia_2",              "neuron___development_1",
+         "neuron___development_2",   "mature.neuron___small_1",  "mature.neuron___small_2",  "diff___tiny")
+vals <- c("Diff - small", "hiPSC", "Start Diff", "Diff - hiPSC-like", "Diff - NPC-like", "Diff", "Diff - Immature Neuron", "Excitatory Neuron", 
+                  "Neuron Development 1", "Neuron Development 2", "Mature Neuron - adhesion", "Mature Neuron", "Mature Neuron - small 1",
+                  "Mature Neuron - small 2", "Microglia 1", "Microglia 2")
+order <- c("diff___tiny", "hiPSC", "hiPSC___start.diff", "diff___hiPSC_like", "diff___NPC_like", "diff", "diff___immature.neuron", "neuron___excitatory", 
+           "neuron___development_1", "neuron___development_2", "mature.neuron___adhesion", "neuron___mature.neuron", "mature.neuron___small_1",
+           "mature.neuron___small_2", "microglia_1", "microglia_2")
+names(cols) <- order
+names(vals) <- order
+
+ct <- DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "celltype_wnn", label = F, label.size = 2.5, repel = TRUE) + 
+  labs(x = "UMAP 1", y = "UMAP 2", col = "") + 
+  theme(legend.position = "none",
+        plot.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()) + 
+  scale_color_manual(values = unname(cols[nms]), labels = unname(vals[nms]))
+
+legends <- ggarrange(get_legend(dist), get_legend(pgp1), nrow=2, heights = c(0.2, 0.8), widths = c(0.5, 0.5))
+
+# Combining plots
+rm_legend <- function(p){p + theme(legend.position = "none")}
+plots <- ggarrange(rm_legend(ct), rm_legend(dist), rm_legend(pgp1),
+                   rm_legend(tfpp1), rm_legend(pgs1), rm_legend(tfps1), nrow = 3, ncol = 2, labels = c("A", "B", "C", "D", "E", "F"))
+
+# plots + merged legends
+afp <- ggarrange(plots, legends, widths = c(0.75, 0.25))
+
+library(svglite)
+ggsave("/g/scb/zaugg/deuner/figs/allcorrelationplots.tiff", afp, device = "tiff", height = 9, width = 13)
