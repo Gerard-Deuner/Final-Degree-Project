@@ -19,7 +19,7 @@ library(ggrepel)
 #############################################
 
 # Set up path of the cluster resolutions eGRNs
-path <- "/g/scb2/zaugg/deuner/GRaNIE/outputdata/timecourse_batch_mode/Batch_Mode_Outputs/"
+path <- "/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/"
 
 # set vector with the resolutions
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
@@ -181,13 +181,87 @@ colnames(all.links) <- resolutions
 all.links
 
 # upset plot
-all.links.min3 <- all.links %>% dplyr::filter(rowSums(.) > 3)
+upset_all <- upset(all.links, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
 
+tiff(paste0("/g/scb/zaugg/deuner/figs/upset_all_cb_sp", ".tiff"), units="in", width=12.8, height=4.8, res=300, type = "cairo")
+upset_all
+dev.off()
+
+all.links.min3 <- all.links %>% dplyr::filter(rowSums(.) > 5)
 all.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
-
 colnames(all.links.min3) <- as.character(resolutions)
+#upset_min5 <- upset(all.links.min3, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
 
-upset(all.links, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+upset_min5 <- UpSetR::upset(all.links.min3, 
+                    sets = as.character(resolutions[1:length(resolutions)]), nintersects = NA,
+                    mainbar.y.label = paste0("TF-peak-gene", " intersection size\n",
+                                             "filtering rows that are present < ", "5", " times\n",
+                                             "across all (e)GRNs"),
+                    sets.x.label = paste0("No. of unique ", "TF-peak-gene", "\nconnections per filtered (e)GRN"),
+                    mb.ratio = c(0.5, 0.5), text.scale = 1,
+                    keep.order = TRUE, show.numbers = TRUE) 
+
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/upset_min5_cb_sp", ".tiff"), units="in", width=14, height=6, res=300, type = "cairo")
+upset_min5
+dev.off()
+
+all.links.min3 <- all.links %>% dplyr::filter(rowSums(.) > 15)
+all.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
+colnames(all.links.min3) <- as.character(resolutions)
+#upset_min5 <- upset(all.links.min3, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+
+upset_min15 <- UpSetR::upset(all.links.min3, 
+                            sets = as.character(resolutions[1:length(resolutions)]), nintersects = NA,
+                            mainbar.y.label = paste0("TF-peak-gene", " intersection size\n",
+                                                     "filtering rows that are present < ", "15", " times\n",
+                                                     "across all (e)GRNs"),
+                            sets.x.label = paste0("No. of unique ", "TF-peak-gene", "\nconnections per filtered (e)GRN"),
+                            mb.ratio = c(0.5, 0.5), text.scale = 1,
+                            keep.order = TRUE, show.numbers = TRUE) 
+
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/upset_min15_cb_sp", ".tiff"), units="in", width=8, height=6, res=300, type = "cairo")
+upset_min15
+dev.off()
+
+# all.links.min3 <- all.links %>% dplyr::filter(rowSums(.) > 5)
+# all.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
+# colnames(all.links.min3) <- as.character(resolutions)
+# upset_min5 <- upset(all.links.min3, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+# upset_min5
+# 
+# tiff(paste0("/g/scb/zaugg/deuner/figs/upset_min5_cb_sp", ".tiff"), units="in", width=12.8, height=4.8, res=300, type = "cairo")
+# upset_min_5
+# dev.off()
+
+# Take a look at links shared min among 15 resolutions
+all.links.min3
+
+
+# overlap analysis on optimal resolutions
+upset(all.links[,5:14], sets = as.character(resolutions[5:14]), keep.order = TRUE, nintersects = NA)
+
+# links present in all of them
+upset(all.links[,5:14] %>% dplyr::filter(rowSums(.) > 7), sets = as.character(resolutions[5:14]), keep.order = TRUE, nintersects = NA)
+
+shared.links <- all.links[,5:14] %>% dplyr::filter(rowSums(.) == 10)
+
+shared.links.df <- stringr::str_split_fixed(rownames(shared.links), "_", 3)
+
+# check TFs
+table(shared.links.df[,1])
+
+# check genes
+table(shared.links.df[,3])
+
+
+# check peaks
+shared.links.df[,2]
+
+
+
+
 
 # add resolution id column in all tf-peak-gene dfs
 df.lens <- c()
@@ -256,6 +330,24 @@ peak.gene.links
 # upset plot
 upset(peak.gene.links, sets = as.character(resolutions), keep.order = TRUE, nintersects = NA)
 
+
+peak.gene.links.min3 <- peak.gene.links %>% dplyr::filter(rowSums(.) >= 15)
+
+peak.gene.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
+
+colnames(peak.gene.links.min3) <- as.character(resolutions)
+
+upset(peak.gene.links.links, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+
+upset(peak.gene.links.min3, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+peak.gene.links.min3
+
+library(stringr)
+peak.gene.df <- str_split_fixed(rownames(peak.gene.links.min3), "_", 2)
+peak.gene.df[,1]
+table(peak.gene.df[,1])
+table(peak.gene.df[,2])
+
 ###################
 # TF-Peak links #
 ###################
@@ -296,9 +388,25 @@ for (df in df_list3){
 colnames(tf.peak.links) <- resolutions
 tf.peak.links
 
+tf.peak.links.min3 <- tf.peak.links %>% dplyr::filter(rowSums(.) >= 15)
+
+tf.peak.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
+
+colnames(tf.peak.links.min3) <- as.character(resolutions)
+
+upset(tf.peak.links, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+
+upset(tf.peak.links.min3, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
+tf.peak.links.min3
+
 # upset plot
 upset(tf.peak.links, sets = as.character(resolutions), keep.order = TRUE, nintersects = NA)
 
+tf.peak.df <- str_split_fixed(rownames(tf.peak.links.min3), "_", 2)
+tf.peak.df[,1]
+table(tf.peak.df[,1])
+table(tf.peak.df[,2])
+tf.peak.df[,2]
 
 ##############
 # unique TFs #
@@ -345,6 +453,13 @@ tfs
 # upset plot
 upset(tfs, sets = as.character(resolutions), keep.order = TRUE, nintersects = NA)
 
+
+
+library(stringr)
+peak.gene.df <- str_split_fixed(rownames(peak.gene.links.min3), "_", 2)
+peak.gene.df[,1]
+table(peak.gene.df[,1])
+table(peak.gene.df[,2])
 
 ################
 # unique PEAKs #
