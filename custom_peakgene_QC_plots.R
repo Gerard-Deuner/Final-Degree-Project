@@ -401,12 +401,15 @@ for (setting in settings){
 # number of clusters and size of eGRNs
 
 library(formattable)
+library(gt)
+library(kableExtra)
 settings <- c("timecourse_batch_mode_pearson_nomicro", "timecourse_batch_mode_spearman_nomicro", "combined_batch_mode_pearson_nomicro", "combined_batch_mode_spearman_nomicro")
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
 informative_colors <- c("#FF0000", "#FF3300", "#FF6600", "#FF9900", "#FFCC00", "#FFFF00", "#CCFF00", "#99FF00", "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF", "#0066FF")
+background_colors <- scales::alpha(informative_colors, alpha = 0.2)
 datasets <- c("timecourse", "combined")
 
-table <- as.data.frame(matrix(nrow = 20, ncol = ))
+table <- as.data.frame(matrix(nrow = 19, ncol = 0))
 
 for (dataset in datasets){
   dvect <- c()
@@ -415,19 +418,37 @@ for (dataset in datasets){
     cl_num <- seur@meta.data %>% dplyr::pull(paste0("wsnn_res.", res)) %>% levels() %>% length()
     dvect <- c(dvect, cl_num)
   }
-  table <- table %>% rbind(dvect)
+  table <- table %>% cbind(dvect)
 }
 
 
 for (setting in settings){
   svect <- c()
-  qread()
   for (res in resolutions){
     GRN <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/", setting, "/Batch_Mode_Outputs/output_pseudobulk_clusterRes", res, "_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
-    
+    grn_size <- GRN@connections$all.filtered$`0` %>% nrow()
+    svect <- c(svect, grn_size)
   }
-  
+  table <- table %>% cbind(svect)
 }
+
+head(table)
+colnames(table) <- c("Timecourse", "Combined", "Timecourse Pearson", "Timecourse Spearman", "Combined Pearson", "Combined Spearman")
+table$Res <- resolutions
+table <- table[, c("Res", "Timecourse", "Combined", "Timecourse Pearson", "Timecourse Spearman", "Combined Pearson", "Combined Spearman")]
+
+# ftable <- formattable(table,list(
+#   Res = proportion_bar(color = informative_colors)))
+
+head(table)
+
+table %>% kbl(escape = F, align = "c") %>%
+  kable_classic("striped", full_width = F) %>%
+  kable_classic() %>% 
+  add_header_above(c(" " = 1, "Dataset" = 2, "Setting" = 4)) %>% 
+  add_header_above(c(" " = 1, "# Clusters" = 2, "eGRN Size" = 4 )) %>% 
+  column_spec(1, color = "black", background = background_colors)
+
 
 ####################
 # HELPER FUNCTIONS #
