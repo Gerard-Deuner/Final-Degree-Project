@@ -661,5 +661,7 @@ plots <- ggarrange(rm_legend(ct), rm_legend(dist), rm_legend(pgp1),
 # plots + merged legends
 afp <- ggarrange(plots, legends, widths = c(0.75, 0.25))
 
-library(svglite)
-ggsave("/g/scb/zaugg/deuner/figs/allcorrelationplots.tiff", afp, device = "tiff", height = 9, width = 13)
+tiff(paste0("/g/scb/zaugg/deuner/figs/allcorrelationplots", ".tiff"), units="in", width=13, height=9, res=300, type = "cairo")
+afp
+dev.off()
+
