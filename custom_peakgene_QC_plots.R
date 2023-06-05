@@ -6,6 +6,8 @@ library(GRaNIE)
 library(dplyr)
 library(Seurat)
 library(qs)
+library(ggplot2)
+library(ggpubr)
 
 # DISCLAIMER: This is a modification of GRaNIE original code
 
@@ -15,7 +17,7 @@ library(qs)
 
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))#c(20, 18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.75, 0.5, 0.25)
 line_types <- c("solid", "dashed")
-settings <- c("timecourse_batch_mode_pearson_nomicro", "timecourse_batch_mode_spearman_nomicro", "combined_batch_mode_pearson_nomicro", "combined_batch_mode_spearman_nomicro")
+settings <- c("timecourse_batch_mode_pearson_nomicro", "timecourse_batch_mode_spearman_nomicro", "combined_batch_mode_pearson_nomicro")#, "combined_batch_mode_spearman_nomicro")
 
 for (setting in settings){
   ii <- 1
@@ -392,8 +394,24 @@ for (setting in settings){
   ggsave(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", setting, ".pdf"), plots_all, device = "pdf")
   assign(paste0("QCplot_", setting), plots_all)
   
+  # save in high quality
+  tiff(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", setting, ".tiff"), units="in", width=7, height=8, res=300, type = "cairo")
+  plots_all
+  dev.off()
 }
 
+tiff(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", "timecourse_batch_mode_spearman_nomicro", ".tiff"), units="in", width=7, height=8, res=300, type = "cairo")
+QCplot_timecourse_batch_mode_spearman_nomicro
+dev.off()
+
+# joint plot
+jp <- ggarrange(QCplot_timecourse_batch_mode_pearson_nomicro, QCplot_timecourse_batch_mode_spearman_nomicro, QCplot_combined_batch_mode_pearson_nomicro, QCplot_combined_batch_mode_spearman_nomicro,
+                labels = c("A", "B", "C", "D")) + theme(axis.text=element_text(size=6))
+
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/QCplots_allsettings", ".tiff"), units="in", width=11.5, height=14, res=300, type = "cairo")
+jp
+dev.off()
 ##############
 # DATA TABLE #
 ##############
@@ -442,13 +460,14 @@ table <- table[, c("Res", "Timecourse", "Combined", "Timecourse Pearson", "Timec
 
 head(table)
 
-table %>% kbl(escape = F, align = "c") %>%
+ktable <- table %>% kbl(escape = F, align = "c") %>%
   kable_classic("striped", full_width = F) %>%
   kable_classic() %>% 
   add_header_above(c(" " = 1, "Dataset" = 2, "Setting" = 4)) %>% 
   add_header_above(c(" " = 1, "# Clusters" = 2, "eGRN Size" = 4 )) %>% 
-  column_spec(1, color = "black", background = background_colors)
-
+  column_spec(1, color = "black", background = background_colors) %>%
+  column_spec (3,border_left = F, border_right = T) %>% 
+  as_image(file = "/g/scb/zaugg/deuner/GRaNIE/figures/settings_table.tiff")
 
 ####################
 # HELPER FUNCTIONS #
