@@ -39,7 +39,7 @@ eQTL.dir <- "/g/scb/zaugg/deuner/valdata/eQTL/validated_links/"
 pcHiC.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(pcHiC.df) <- c("gene", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
-for (file in grep(list.files(pcHiC.dir, pattern = "nomicro\\."), pattern = 'filtered', invert=TRUE, value=TRUE)){
+for (file in grep(list.files(pcHiC.dir, pattern = "nomicro_"), pattern = 'filtered', invert=TRUE, value=TRUE)){
   print(file)
   df <- read.csv(paste0(pcHiC.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
@@ -56,7 +56,7 @@ for (file in grep(list.files(pcHiC.dir, pattern = "nomicro\\."), pattern = 'filt
 ChiP.df <- as.data.frame(matrix(nrow = 0, ncol = 7))
 names(ChiP.df) <- c("TF", "peak", "res", "validated", "setting", "dataset", "corr.method")
 
-for (file in grep(list.files(ChiP.dir, pattern = "nomicro."), pattern = 'filtered', invert=TRUE, value=TRUE)){
+for (file in grep(grep(list.files(ChiP.dir, pattern = c("nomicro", "all")), pattern = 'filtered', invert=TRUE, value=TRUE), pattern = 'spearman_nomicro.csv', invert=TRUE, value=TRUE)){
   print(file)
   df <- read.csv(paste0(ChiP.dir, file), row.names = 1)
   dataset <- str_split(file, "_") %>% map(1) %>% as.character
@@ -117,6 +117,7 @@ val.df$validated <- as.numeric(val.df$validated)
 
 # define colours for the 4 nomicro settings
 colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
+labels <- c("Combined - Pearson", "Combined - Spearman", "Timecourse - Pearson", "Timecourse - Spearman")
 
 # TFs for which I have Chip-seq data
 chip.TFs <- val.df %>%
@@ -133,7 +134,7 @@ tf1 <- ggplot(val.df %>%
          summarise(recoveredTFs = sum(validated)), # count number of TFs recovered per each resolution and setting
        aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "Unique TFs") +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
@@ -152,7 +153,7 @@ tf2<- ggplot(val.df %>%
        aes(resolution, y = recoveredTFs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
   labs(y = "# TFs recovered", x = "Cluster Resolutions", title = "TF Recovery", caption = "(allow duplicates)") +
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         strip.background = element_blank(),
@@ -160,7 +161,7 @@ tf2<- ggplot(val.df %>%
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting")
 
-tfplots <- ggarrange(tf1, tf2, nrow = 1, ncol = 2, common.legend = TRUE)
+tfplots <- ggarrange(tf1, tf2, nrow = 1, ncol = 2, common.legend = TRUE) 
 tfplots
 ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", tfplots)
 
@@ -186,7 +187,7 @@ tfp1 <- ggplot(val.df %>%
               aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
   labs(y = "# TF-peak links recovered", x = "Cluster Resolutions", title = "TF-peak links Recovery") +
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         strip.background = element_blank(),
@@ -219,13 +220,13 @@ tfp4 <- ggplot(val.df %>%
             aes(resolution, y = ratio , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# TF-Peak Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw() 
 
 tfp <- ggarrange(tfp1, tfp3, tfp4, ncol = 2, nrow = 2, common.legend = TRUE, labels = "AUTO")
 tfp
-ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", pg)
+ggsave("/g/scb/zaugg/deuner/valdata/figures/TFPeakRecovery.pdf", tfp)
 
 
 # Peak-Gene links recovery from pcHi-C
@@ -239,7 +240,7 @@ a <- ggplot(val.df %>%
        aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
@@ -255,7 +256,7 @@ a2 <- ggplot(val.df %>%
             aes(resolution, y = n , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw() 
 
@@ -267,7 +268,7 @@ b <- ggplot(val.df %>%
   geom_bar(stat = "identity") + 
   facet_grid("setting") +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Recovery distribution across resulutions") +
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
@@ -299,7 +300,7 @@ d <- ggplot(val.df %>%
        aes(resolution, y = ratio , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw() 
 
@@ -361,7 +362,7 @@ i <- ggplot(val.df %>%
        aes(resolution, y = recoveredLINKs , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
@@ -376,7 +377,7 @@ ii <- ggplot(val.df %>%
   geom_bar(stat = "identity") + 
   facet_grid("setting") +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Recovery distribution across resulutions") +
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
@@ -410,7 +411,7 @@ iv <- ggplot(val.df %>%
             aes(resolution, y = ratio , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovery Ratio", x = "Cluster Resolutions", title = "Recovery Ratio") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme_bw() 
 
@@ -420,80 +421,140 @@ ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery_eQTL.png", pge, dev
 
 # validated links with pcHi-C and eQTL data show a similar pattern
 # check if links with pcHi-C data are the same as links validated with eQTL data
-pchic.links <- val.df %>%
-  dplyr::filter(validation == "pcHi-C", validated == 1, setting == "combined_spearman_nomicro") %>%
-  dplyr::select(gene, peak, resolution)
 
-eQTL.links <- val.df %>%
-  dplyr::filter(validation == "eQTL", validated == 1, setting == "combined_spearman_nomicro_all_eQTL_links") %>%
-  dplyr::select(gene, peak, resolution)
+# paper figure plots #
+a <- a + theme(legend.title=element_blank(),
+               axis.title.x=element_blank(),
+               axis.title.y=element_blank(),
+               axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(title = "")
+i <- i + theme(legend.title=element_blank(), 
+               axis.title.x=element_blank(),
+               axis.title.y=element_blank(),
+               axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(title = "")
+tfp1 <- tfp1 + theme(legend.title=element_blank(),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank()) + labs(title = "")
 
-pchic.links
-eQTL.links
+fp <- ggarrange(a, i, ggplot() + theme_transparent(), tfp1, common.legend = T, ncol = 2, nrow = 2)
 
-# convert gene names of pcHI-C links to ENSEMBL IDs to they match with the pcHi-C links
-require('biomaRt')
-mart <- useMart('ENSEMBL_MART_ENSEMBL')
-mart <- useDataset('hsapiens_gene_ensembl', mart)
-annotLookup <- getBM(
-  mart = mart,
-  attributes = c(
-    'hgnc_symbol',
-    'ensembl_gene_id',
-    'gene_biotype'),
-  uniqueRows = TRUE)
-colnames(annotLookup)[1:2] <- c("gene", "gene.ENSEMBL")
-pchic.links <- pchic.links %>% 
-  inner_join(annotLookup, by = "gene", multiple = "all") %>%
-  dplyr::select(-gene)
-names(pchic.links)[3] <- "gene" 
-
-# also change peak format ot eqtl's format (chr:start-end)
-pchic.links[,c("chr", "cords")] <- str_split_fixed(pchic.links$peak, "-", 2)
-
-eQTL.links[,c("chr", "cords")] <- str_split_fixed(eQTL.links$peak, ":", 2)
-
-# compute how many of them are shared
-intersection <- inner_join(pchic.links, eQTL.links, by = c("gene", "chr", "cords", "resolution")) 
-nrow(intersection) # quite a lot are shared
-
-# intersection by resolution
-int.df <- intersection %>%
-  group_by(resolution) %>%
-  tally
-
-# add column of total links summing the pchic and eqtl links to see the difference
-tot.pchic <- val.df %>%
-  dplyr::filter(validated == 1, validation == "pcHi-C", setting == "combined_spearman_nomicro") %>%
-  group_by(resolution) %>%
-  tally() %>%
-  pull(n)
-
-tot.eqtl <- val.df %>%
-  dplyr::filter(validated == 1, validation == "eQTL", setting == "combined_spearman_nomicro_all_eQTL_links") %>%
-  group_by(resolution) %>%
-  tally() %>%
-  pull(n)
-
-total.links <- tot.pchic + tot.eqtl
-
-int.df$all <- total.links
-
-names(int.df)[2] <- "shared"
-
-int.df <- int.df %>%
-  pivot_longer(c(shared, all), names_to = "type", values_to = "value")
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots", ".pdf"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+fp
+dev.off()
 
 
+# Define the colors for the lines
+colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
-# plot it 
-ggplot(int.df, aes(x = resolution, y = value, group = type, fill = forcats::fct_rev(type))) + 
-  geom_bar(stat = "identity", position =  "stack") + 
-  labs(x = "Resolution", y = "Validated peak-gene links", fill = "type") + 
+# peak-gene recovery distribution plot
+# Combine the data for both validation types
+combined_data <- rbind(
+  val.df %>%                 
+    dplyr::filter(validation == "pcHi-C") %>%
+    group_by(setting, resolution) %>%
+    summarise(recoveredLINKs = sum(validated)),
+  val.df %>%                 
+    dplyr::filter(validation == "eQTL") %>%
+    group_by(setting, resolution) %>%
+    summarise(recoveredLINKs = sum(validated))
+)
+combined_data$validation <- c(rep("pcHi-C", nrow(combined_data)/2), rep("eQTL", nrow(combined_data)/2))
+
+new_settings <- c()
+for (i in 1:nrow(combined_data)){
+  split <- str_split(combined_data$setting[i], "_")
+if (split[[1]][1] == "combined"){
+  new_setting <- ifelse(split[[1]][2] == "spearman", "Combined - Spearman", "Combined - Pearson") 
+} else {
+  new_setting <- ifelse(split[[1]][2] == "spearman", "Timecourse - Spearman", "Timecourse - Pearson") 
+}
+  new_settings <- c(new_settings, new_setting)
+}
+combined_data$setting <- new_settings
+
+
+# Create the plot
+peakgene_dist <- ggplot(combined_data, aes(resolution, y = recoveredLINKs, group = interaction(setting, validation), col = setting, linetype = validation)) +
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "No. Recovered Links", x = "Cluster Resolutions", title = "Peak-Gene Recovery") +
+  scale_color_manual(values = colours) +
+  scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
   theme_bw() + 
-  scale_fill_manual(values = c("pink", "darkgrey"))
+  theme(legend.title = element_blank(),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+# Display the plot
+peakgene_dist
 
 
+# peak-gene ratio dist
+# Combine the data for both validation types
+combined_data_ratio <- rbind(
+  val.df %>%                 
+    dplyr::filter(validation == "pcHi-C") %>%
+    group_by(setting, resolution) %>%
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% 
+    mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
+  val.df %>%                 
+    dplyr::filter(validation == "eQTL") %>%
+    group_by(setting, resolution) %>%
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% 
+    mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered)
+)
+combined_data_ratio$validation <- c(rep("pcHi-C", nrow(combined_data)/2), rep("eQTL", nrow(combined_data)/2))
+
+new_settings <- c()
+for (i in 1:nrow(combined_data_ratio)){
+  split <- str_split(combined_data_ratio$setting[i], "_")
+  if (split[[1]][1] == "combined"){
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Combined - Spearman", "Combined - Pearson") 
+  } else {
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Timecourse - Spearman", "Timecourse - Pearson") 
+  }
+  new_settings <- c(new_settings, new_setting)
+}
+combined_data_ratio$setting <- new_settings
+
+
+# Create the plot
+peakgene_ratio <- ggplot(combined_data_ratio, aes(resolution, y = ratio, group = interaction(setting, validation), col = setting, linetype = validation)) +
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "Ratio", x = "Cluster Resolutions", title = "") +
+  scale_color_manual(values = colours) +
+  scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
+  theme_bw() + 
+  theme(legend.title = element_blank())
+
+# Display the plot
+peakgene_ratio
+
+
+# tf recovery plot #
+tfrecovery <- ggplot(val.df %>% 
+         dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
+         dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+         group_by(setting, resolution) %>% # group the data by resolution and setting
+         summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
+       aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity", col = "black") + 
+  labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
+  scale_fill_manual(values = colours, labels = labels) +  
+  theme_bw() + 
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting") 
+  
+
+all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("A", "B", "C")) 
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_unfiltered", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+all_plots
+dev.off()
 
 #############################
 # FILTERED LINKS VALIDATION #
@@ -618,7 +679,7 @@ tfp1 <- ggplot(val.df %>%
                aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity") + 
   labs(y = "# TF-peak links recovered", x = "Cluster Resolutions", title = "TF-peak links Recovery") +
-  scale_fill_manual(values = colours) +  
+  scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         strip.background = element_blank(),
@@ -679,7 +740,7 @@ a <- ggplot(val.df %>%
             aes(resolution, y = recoveredTFs , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme_bw()+
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
@@ -751,7 +812,7 @@ i <- ggplot(val.df %>%
             aes(resolution, y = recoveredLINKs , group = setting, col = setting)) + 
   geom_smooth(size = 1, se = FALSE) +
   labs(y = "# Peak-Gene Links Recovered", x = "Cluster Resolutions", title = "Peak-Gene Connections Recovery") +
-  scale_color_manual(values = colours) +  
+  scale_color_manual(values = colours, labels = labels) +  
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
@@ -808,6 +869,121 @@ pge <- ggarrange(i, ii, iii, iv, ncol = 2, nrow = 2, common.legend = TRUE, label
 pge
 ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery_eQTL_filtered.png", pge, device = "png")
 
+# paper figure plots #
+
+# Define the colors for the lines
+colours <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
+
+# peak-gene recovery distribution plot
+# Combine the data for both validation types
+combined_data <- rbind(
+  val.df %>%                 
+    dplyr::filter(validation == "pcHi-C") %>%
+    group_by(setting, resolution) %>%
+    summarise(recoveredLINKs = sum(validated)),
+  val.df %>%                 
+    dplyr::filter(validation == "eQTL") %>%
+    group_by(setting, resolution) %>%
+    summarise(recoveredLINKs = sum(validated))
+)
+combined_data$validation <- c(rep("pcHi-C", nrow(combined_data)/2), rep("eQTL", nrow(combined_data)/2))
+
+new_settings <- c()
+for (i in 1:nrow(combined_data)){
+  split <- str_split(combined_data$setting[i], "_")
+  if (split[[1]][1] == "combined"){
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Combined - Spearman", "Combined - Pearson") 
+  } else {
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Timecourse - Spearman", "Timecourse - Pearson") 
+  }
+  new_settings <- c(new_settings, new_setting)
+}
+combined_data$setting <- new_settings
+
+
+# Create the plot
+peakgene_dist <- ggplot(combined_data, aes(resolution, y = recoveredLINKs, group = interaction(setting, validation), col = setting, linetype = validation)) +
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "No. Recovered Links", x = "Cluster Resolutions", title = "Peak-Gene Recovery") +
+  scale_color_manual(values = colours) +
+  scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
+  theme_bw() + 
+  theme(legend.title = element_blank(),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+# Display the plot
+peakgene_dist
+
+
+# peak-gene ratio dist
+# Combine the data for both validation types
+combined_data_ratio <- rbind(
+  val.df %>%                 
+    dplyr::filter(validation == "pcHi-C") %>%
+    group_by(setting, resolution) %>%
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% 
+    mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered),
+  val.df %>%                 
+    dplyr::filter(validation == "eQTL") %>%
+    group_by(setting, resolution) %>%
+    summarise(recovered = sum(validated), GRN_links = length(validated)) %>% 
+    mutate(non_recovered = GRN_links - recovered, ratio = recovered / non_recovered)
+)
+combined_data_ratio$validation <- c(rep("pcHi-C", nrow(combined_data)/2), rep("eQTL", nrow(combined_data)/2))
+
+new_settings <- c()
+for (i in 1:nrow(combined_data_ratio)){
+  split <- str_split(combined_data_ratio$setting[i], "_")
+  if (split[[1]][1] == "combined"){
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Combined - Spearman", "Combined - Pearson") 
+  } else {
+    new_setting <- ifelse(split[[1]][2] == "spearman", "Timecourse - Spearman", "Timecourse - Pearson") 
+  }
+  new_settings <- c(new_settings, new_setting)
+}
+combined_data_ratio$setting <- new_settings
+
+
+# Create the plot
+peakgene_ratio <- ggplot(combined_data_ratio, aes(resolution, y = ratio, group = interaction(setting, validation), col = setting, linetype = validation)) +
+  geom_smooth(size = 1, se = FALSE) +
+  labs(y = "Ratio", x = "Cluster Resolutions", title = "") +
+  scale_color_manual(values = colours) +
+  scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
+  theme_bw() + 
+  theme(legend.title = element_blank())
+
+# Display the plot
+peakgene_ratio
+
+
+# tf recovery plot #
+tfrecovery <- ggplot(val.df %>% 
+                       dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
+                       dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                       group_by(setting, resolution) %>% # group the data by resolution and setting
+                       summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
+                     aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
+  geom_bar(stat = "identity", col = "black") + 
+  labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
+  scale_fill_manual(values = colours, labels = labels) +  
+  theme_bw() + 
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        strip.background = element_blank(),
+        strip.text.y = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  facet_grid("setting") 
+
+
+all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("E", "F", "G")) 
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_filtered", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+all_plots
+dev.off()
 
 ################################
 # GENERAL GRN STATISTICS PLOTS #
@@ -905,9 +1081,13 @@ p4 <- ggplot(all.grn.links %>%
                       high = "#FFCCFF")
   
 
-pgrn <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2, labels = "AUTO")
+pgrn <- ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 pgrn
 ggsave("/g/scb/zaugg/deuner/valdata/figures/GRNstats_comb_sp_nm.png", pgrn, device = "png")
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/GRNstats_comb_sp_nm", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+pgrn
+dev.off()
 
 # genes per regulon distribution
 p5 <- ggplot(all.grn.links %>%
@@ -1000,9 +1180,22 @@ p10 <- ggplot(all.grn.links %>%
   theme(axis.text.x = element_text(angle = 60, hjust=1), plot.title = element_text(hjust = 0.5),
         legend.position="none")
 
-prgn.log <- ggarrange(p9, p10, nrow = 2, labels = "AUTO")
+prgn.log <- ggarrange(p9, p10, nrow = 2)
 prgn.log
 ggsave("/g/scb/zaugg/deuner/valdata/figures/RegulonsStats_log_comb_sp_nm.png", prgn.log, device = "png")
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/RegulonsStats_log_comb_sp_nm", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+prgn.log
+dev.off()
+
+# arrange paper plots
+tiff(paste0("/g/scb/zaugg/deuner/figs/eGRN_stats_regulons_cb_sp_nolabels", ".tiff"), units="in", width=12.8, height=4.8, res=300, type = "cairo")
+ggarrange(pgrn, prgn.log, ncol = 2)
+dev.off()
+
+ggarrange(pgrn, ggplot() + theme_void(), prgn.log, ncol = 3, widths = c(1, 0.2, 1))
+
+cb <- ggarrange(pgrn, prgn.log, ncol = 2)
 
 ################################################
 # Score Resolutions based on previous analyses #
