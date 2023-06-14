@@ -11,13 +11,130 @@ library(ggpubr)
 
 # DISCLAIMER: This is a modification of GRaNIE original code
 
+####################
+# HELPER FUNCTIONS #
+####################
+
+.prettyNum <- function(number, verbose = TRUE) {
+  prettyNum(number, big.mark = ",", scientific = FALSE)
+}
+
+.customLabeler <- function(tbl_freq) {
+  tbl_freq_label = paste0(names(tbl_freq), " (", tbl_freq, ")")
+  names(tbl_freq_label) = names(tbl_freq)
+  ggplot2::as_labeller(tbl_freq_label)
+}
+
+
+.createTables_peakGeneQC <- function(peakGeneCorrelations.all.cur, networkType_details, colors_vec, range) {
+  
+  d = peakGeneCorrelations.all.cur %>% 
+    dplyr::group_by(.data$r_positive, class, .data$peak_gene.p.raw.class) %>%
+    dplyr::summarise(n = dplyr::n()) %>%
+    dplyr::ungroup()
+  
+  # Some classes might be missing, add them here with explicit zeros
+  for (r_pos in c(TRUE, FALSE)) {
+    for (classCur in networkType_details) {
+      for (pclassCur in levels(peakGeneCorrelations.all.cur$peak_gene.p.raw.class)) {
+        
+        row = which(d$r_positive == r_pos & d$class == classCur & as.character(d$peak_gene.p.raw.class) == as.character(pclassCur))
+        if (length(row) == 0) {
+          d = tibble::add_row(d, r_positive = r_pos, class = classCur, peak_gene.p.raw.class = pclassCur, n = 0)
+        }
+      }
+    }
+  }
+  
+  # Restore the "ordered" factor for class
+  d$peak_gene.p.raw.class = factor(d$peak_gene.p.raw.class, ordered = TRUE, levels =  levels(peakGeneCorrelations.all.cur$peak_gene.p.raw.class))
+  
+  
+  # Normalization factors
+  dsum = d %>%
+    dplyr::group_by(.data$r_positive, .data$class) %>%
+    dplyr::summarise(sum_n = sum(.data$n))
+  
+  
+  # Summarize per bin
+  d2 = d %>%
+    dplyr::group_by(class, .data$peak_gene.p.raw.class) %>%
+    dplyr::summarise(sum_pos = .data$n[.data$r_positive],
+                     sum_neg = .data$n[!.data$r_positive]) %>%
+    dplyr::mutate(ratio_pos_raw = .data$sum_pos / .data$sum_neg,
+                  fraction_pos = .data$sum_pos / (.data$sum_pos + .data$sum_neg),
+                  fraction_neg = 1 - .data$fraction_pos) %>%
+    dplyr::ungroup()
+  
+  # Compare between real and background
+  normFactor_real = dplyr::filter(dsum, class ==  !! (networkType_details[1])) %>%  dplyr::pull(.data$sum_n) %>% sum() /
+    dplyr::filter(dsum, class ==  !! (networkType_details[2])) %>%  dplyr::pull(.data$sum_n) %>% sum()
+  
+  # ratio_norm not used currently, no normalization necessary here or not even useful because we dont want to normalize the r_pos and r_neg ratios: These are signal in a way. Only when comparing between real and background, we have to account for sample size for corrections
+  d3 = d %>%
+    dplyr::group_by(.data$peak_gene.p.raw.class, .data$r_positive) %>%
+    dplyr::summarise(n_real     = .data$n[class == !! (names(colors_vec)[1]) ],
+                     n_background = .data$n[class == !! (names(colors_vec)[2]) ]) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(ratio_real_raw = .data$n_real / .data$n_background,
+                  ratio_real_norm = .data$ratio_real_raw / normFactor_real,
+                  enrichment_real      = .data$n_real / (.data$n_real + .data$n_background),
+                  enrichment_real_norm = (.data$n_real / normFactor_real) / ((.data$n_real / normFactor_real) + .data$n_background)) 
+  
+  
+  stopifnot(identical(levels(d2$peak_gene.p.raw.class), levels(d3$peak_gene.p.raw.class)))
+  # 2 enrichment bar plots but combined using facet_wrap
+  d2$set = "r+ / r-"; d3$set = "real / background" 
+  d_merged <- tibble::tibble(peak_gene.p.raw.class = c(as.character(d2$peak_gene.p.raw.class), 
+                                                       as.character(d3$peak_gene.p.raw.class)),
+                             ratio = c(d2$ratio_pos_raw, d3$ratio_real_norm),
+                             classAll = c(as.character(d2$class), d3$r_positive),
+                             set = c(d2$set, d3$set)) %>%
+    dplyr::mutate(classAll = factor(.data$classAll, levels = c(paste0("real_",range), paste0("random_",range), "TRUE", "FALSE")),
+                  peak_gene.p.raw.class = factor(.data$peak_gene.p.raw.class, levels = levels(d2$peak_gene.p.raw.class)))
+  
+  d4 = tibble::tibble(peak_gene.p.raw.class = unique(d$peak_gene.p.raw.class), 
+                      n_rpos_real = NA_integer_, n_rpos_random = NA_integer_,
+                      n_rneg_real = NA_integer_, n_rneg_random = NA_integer_,
+                      ratio_background_real_rpos_norm = NA_real_,
+                      ratio_background_real_rneg_norm = NA_real_)
+  
+  for (i in seq_len(nrow(d4))) {
+    row_d2 = which(d2$class == networkType_details[1] & d2$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
+    stopifnot(length(row_d2) == 1)
+    d4[i, "n_rpos_real"] = d2[row_d2, "sum_pos"] %>% unlist()
+    d4[i, "n_rneg_real"] = d2[row_d2, "sum_neg"] %>% unlist()
+    row_d2 = which(d2$class == paste0("random_",range) & d2$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
+    d4[i, "n_rpos_random"] = d2[row_d2, "sum_pos"] %>% unlist()
+    d4[i, "n_rneg_random"] = d2[row_d2, "sum_neg"] %>% unlist()
+    
+    row_d3 = which(d3$r_positive == TRUE & d3$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
+    d4[i, "ratio_background_real_rpos_norm"] = 1 - d3[row_d3, "ratio_real_norm"] %>% unlist()
+    row_d3 = which(d3$r_positive == FALSE & d3$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
+    d4[i, "ratio_background_real_rneg_norm"] = 1 - d3[row_d3, "ratio_real_norm"] %>% unlist()
+  }
+  
+  d4 = d4 %>%
+    dplyr::mutate(ratio_rneg_rpos_real = .data$n_rneg_real / (.data$n_rneg_real + .data$n_rpos_real),
+                  ratio_rneg_rpos_random = .data$n_rneg_random / (.data$n_rneg_random + .data$n_rpos_random),
+                  peak_gene.p.raw.class.bin = as.numeric(.data$peak_gene.p.raw.class)) %>%
+    dplyr::arrange(.data$peak_gene.p.raw.class.bin)
+  
+  d4_melt = reshape2::melt(d4, id  = c("peak_gene.p.raw.class.bin", "peak_gene.p.raw.class")) %>%
+    dplyr::filter(grepl("ratio", .data$variable))
+  
+  
+  list(d = d, d2 = d2, d3 = d3, d4 = d4, d4_melt = d4_melt, d_merged = d_merged)
+  
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%#
 # ALL RESOLUTIONS ANALYSIS #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))#c(20, 18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.75, 0.5, 0.25)
 line_types <- c("solid", "dashed")
-settings <- c("timecourse_batch_mode_pearson_nomicro", "timecourse_batch_mode_spearman_nomicro", "combined_batch_mode_pearson_nomicro")#, "combined_batch_mode_spearman_nomicro")
+settings <- c("timecourse_batch_mode_pearson_nomicro", "timecourse_batch_mode_spearman_nomicro", "combined_batch_mode_pearson_nomicro", "combined_batch_mode_spearman_nomicro")
 
 for (setting in settings){
   ii <- 1
@@ -274,10 +391,13 @@ for (setting in settings){
           freq_pos <- c("r+ (r>0)", "r- (r<=0)")
           names(freq_pos) <- c(TRUE, FALSE)
           
+          peakGeneCorrelations.all$r_positive_f = factor(peakGeneCorrelations.all$r_positive, levels=c("TRUE", "FALSE"))
+          
+          
           if (res == 0.1) {
             gA2 <- ggplot2::ggplot(peakGeneCorrelations.all[indexCur,], ggplot2::aes(peak_gene.p_raw)) +
               ggplot2::geom_density(ggplot2::aes(color = dist_class, linetype = dist_class)) +
-              ggplot2::facet_grid(r_positive ~ class, labeller = ggplot2::labeller(class = freq_class, r_positive = freq_pos)) +
+              ggplot2::facet_grid(r_positive_f ~ class, labeller = ggplot2::labeller(class = freq_class, r_positive_f = freq_pos)) +
               ggplot2::xlab(xlabel) +
               ggplot2::ylab("Density") +
               ggplot2::theme_bw() +
@@ -293,7 +413,7 @@ for (setting in settings){
           gA2 <- gA2 + ggplot2::scale_linetype_manual(values = line_types)
           
           
-       
+          
           
           # Helper function to retrieve all tables and data aggregation steps for subsequent visualization
           tbl.l = .createTables_peakGeneQC(peakGeneCorrelations.all[indexCur,], networkType_details, colors_vec, range)
@@ -326,7 +446,7 @@ for (setting in settings){
             gB3 = gB3 + ggplot2::geom_bar(tbl.l$d_merged, mapping = ggplot2::aes(.data$peak_gene.p.raw.bins, .data$ratio, fill = .data$classAll), stat = "identity", position = "dodge", na.rm = TRUE, width = 0.5)
           }
           
-        
+          
           #  plot two FDR plots as well: (fraction of negative / negative+positive) and (fraction of background / background + real)
           # that could give an indication of whether an FDR based on the background or based on the negative correlations would be more stringent
           
@@ -348,70 +468,89 @@ for (setting in settings){
           xlabel = paste0("Correlation coefficient r (binned)")
           
           
+          # if (res == 0.1) {
+          #   gD = ggplot2::ggplot(binData.r, ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), fill = binData.r$dist_class) +
+          #     ggplot2::geom_line(ggplot2::aes(linetype = .data$dist_class), color = binData.r$dist_class, stat = "identity") +
+          #     ggplot2::theme_bw() +
+          #     ggplot2::theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1)) +
+          #     ggplot2::xlab(xlabel) + ggplot2::ylab("Abundance") +
+          #     theme_main
+          # } else {
+          #   gD = gD +
+          #     ggplot2::geom_line(data = binData.r,
+          #                        mapping = ggplot2::aes(x = .data$peak_gene.r.class,
+          #                                               y = .data$nnorm,
+          #                                               group = .data$class,
+          #                                               linetype = .data$dist_class),
+          #                        color = binData.r$dist_class,
+          #                        stat = "identity") + 
+          #     theme(axis.text.x = element_text(angle = 45, hjust=1))
+          # }
+          
+          peakGeneCorrelations.all$resolution <- rep(res, nrow(peakGeneCorrelations.all))
           if (res == 0.1) {
-            gD = ggplot2::ggplot(binData.r, ggplot2::aes(.data$peak_gene.r.class, .data$nnorm, group = .data$class), fill = binData.r$dist_class) +
-              ggplot2::geom_line(ggplot2::aes(linetype = .data$dist_class), color = binData.r$dist_class, stat = "identity") +
-              ggplot2::theme_bw() +
-              ggplot2::theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1)) +
-              ggplot2::xlab(xlabel) + ggplot2::ylab("Abundance") +
-              theme_main
+            peakGeneAll <- peakGeneCorrelations.all
           } else {
-            gD = gD +
-              ggplot2::geom_line(data = binData.r,
-                                 mapping = ggplot2::aes(x = .data$peak_gene.r.class,
-                                                        y = .data$nnorm,
-                                                        group = .data$class,
-                                                        linetype = .data$dist_class),
-                                 color = binData.r$dist_class,
-                                 stat = "identity") + 
-              theme(axis.text.x = element_text(angle = 45, hjust=1))
+            peakGeneAll <- rbind(peakGeneAll, peakGeneCorrelations.all)
           }
           
-          gD <- gD + ggplot2::scale_linetype_manual(values = line_types)
+          gD = ggplot2::ggplot(peakGeneAll, ggplot2::aes(x = .data$peak_gene.r, y = as.factor(.data$resolution), fill = .data$class)) +
+            ggridges::geom_density_ridges(alpha = .5) +
+            ggridges::theme_ridges() + 
+            scale_fill_manual(values = c("#D55E0050", "#0072B250"), labels = c("real", "random")) +
+            scale_color_manual(values = c("#D55E00", "#0072B2"), guide = "none") +
+            labs(x = "Correlation coefficient r", y = "Resolution") +
+            coord_flip() + 
+            theme(axis.text.x = element_text(angle = 45, hjust=1))
           
-          line_types <- c(line_types, "solid", "dashed") 
+        #  gD <- gD + ggridges::scale_linetype_manual(values = line_types)
           
-          mainTitle = paste0("Summary QC (TF: ", TFCur, ", gene type: ", paste0(geneTypesSelected, collapse = "+"), ",\n", .prettyNum(range), " bp promoter range)")
+        line_types <- c(line_types, "solid", "dashed") 
           
-          plots_all = ( ((gA2) + 
-                           patchwork::plot_layout(widths = c(3))) / ((gD) + 
-                                                                       patchwork::plot_layout(widths = c(4))) ) + 
-            patchwork::plot_layout(heights = c(2,1), guides = 'collect') +
+          mainTitle = "Summary QC"
+
+          plots_all = ( ((gA2) +
+                           patchwork::plot_layout(widths = c(3))) / ((gD) +
+                                                                       patchwork::plot_layout(widths = c(4))) ) +
+            patchwork::plot_layout(heights = c(2,1), guides = 'collect') + #collect or keep
             patchwork::plot_annotation(title = mainTitle, theme = ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)))
-          
+
           plot(plots_all)
-          
+
         }
-        pageCounter = pageCounter + 1
+        
         
         
       } # end for each TF
       
-    }
+      }
     ii <- ii + 1
-  }
-  
+    }
+    
   ggsave(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", setting, ".pdf"), plots_all, device = "pdf")
   assign(paste0("QCplot_", setting), plots_all)
   
   # save in high quality
-  tiff(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", setting, ".tiff"), units="in", width=7, height=8, res=300, type = "cairo")
+  png(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", setting, ".png"), units="in", width=7, height=8, res=300, type = "cairo")
   plots_all
   dev.off()
 }
 
-tiff(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", "timecourse_batch_mode_spearman_nomicro", ".tiff"), units="in", width=7, height=8, res=300, type = "cairo")
-QCplot_timecourse_batch_mode_spearman_nomicro
-dev.off()
+# png(paste0("/g/scb/zaugg/deuner/GRaNIE/figures/QCplots_", "timecourse_batch_mode_spearman_nomicro", "png"), units="in", width=7, height=8, res=300, type = "cairo")
+# QCplot_timecourse_batch_mode_spearman_nomicro
+# dev.off()
 
 # joint plot
 jp <- ggarrange(QCplot_timecourse_batch_mode_pearson_nomicro, QCplot_timecourse_batch_mode_spearman_nomicro, QCplot_combined_batch_mode_pearson_nomicro, QCplot_combined_batch_mode_spearman_nomicro,
                 labels = c("A", "B", "C", "D")) + theme(axis.text=element_text(size=6))
 
 
-tiff(paste0("/g/scb/zaugg/deuner/figs/QCplots_allsettings", ".tiff"), units="in", width=11.5, height=14, res=300, type = "cairo")
+png(paste0("/g/scb/zaugg/deuner/figs/QCplots_allsettings", ".png"), units="in", width=11.5, height=14, res=300, type = "cairo")
 jp
 dev.off()
+
+
+
 ##############
 # DATA TABLE #
 ##############
@@ -469,120 +608,5 @@ ktable <- table %>% kbl(escape = F, align = "c") %>%
   column_spec (3,border_left = F, border_right = T) %>% 
   as_image(file = "/g/scb/zaugg/deuner/GRaNIE/figures/settings_table.tiff")
 
-####################
-# HELPER FUNCTIONS #
-####################
 
-.prettyNum <- function(number, verbose = TRUE) {
-  prettyNum(number, big.mark = ",", scientific = FALSE)
-}
-
-.customLabeler <- function(tbl_freq) {
-  tbl_freq_label = paste0(names(tbl_freq), " (", tbl_freq, ")")
-  names(tbl_freq_label) = names(tbl_freq)
-  ggplot2::as_labeller(tbl_freq_label)
-}
-
-
-.createTables_peakGeneQC <- function(peakGeneCorrelations.all.cur, networkType_details, colors_vec, range) {
-  
-  d = peakGeneCorrelations.all.cur %>% 
-    dplyr::group_by(.data$r_positive, class, .data$peak_gene.p.raw.class) %>%
-    dplyr::summarise(n = dplyr::n()) %>%
-    dplyr::ungroup()
-  
-  # Some classes might be missing, add them here with explicit zeros
-  for (r_pos in c(TRUE, FALSE)) {
-    for (classCur in networkType_details) {
-      for (pclassCur in levels(peakGeneCorrelations.all.cur$peak_gene.p.raw.class)) {
-        
-        row = which(d$r_positive == r_pos & d$class == classCur & as.character(d$peak_gene.p.raw.class) == as.character(pclassCur))
-        if (length(row) == 0) {
-          d = tibble::add_row(d, r_positive = r_pos, class = classCur, peak_gene.p.raw.class = pclassCur, n = 0)
-        }
-      }
-    }
-  }
-  
-  # Restore the "ordered" factor for class
-  d$peak_gene.p.raw.class = factor(d$peak_gene.p.raw.class, ordered = TRUE, levels =  levels(peakGeneCorrelations.all.cur$peak_gene.p.raw.class))
-  
-  
-  # Normalization factors
-  dsum = d %>%
-    dplyr::group_by(.data$r_positive, .data$class) %>%
-    dplyr::summarise(sum_n = sum(.data$n))
-  
-  
-  # Summarize per bin
-  d2 = d %>%
-    dplyr::group_by(class, .data$peak_gene.p.raw.class) %>%
-    dplyr::summarise(sum_pos = .data$n[.data$r_positive],
-                     sum_neg = .data$n[!.data$r_positive]) %>%
-    dplyr::mutate(ratio_pos_raw = .data$sum_pos / .data$sum_neg,
-                  fraction_pos = .data$sum_pos / (.data$sum_pos + .data$sum_neg),
-                  fraction_neg = 1 - .data$fraction_pos) %>%
-    dplyr::ungroup()
-  
-  # Compare between real and background
-  normFactor_real = dplyr::filter(dsum, class ==  !! (networkType_details[1])) %>%  dplyr::pull(.data$sum_n) %>% sum() /
-    dplyr::filter(dsum, class ==  !! (networkType_details[2])) %>%  dplyr::pull(.data$sum_n) %>% sum()
-  
-  # ratio_norm not used currently, no normalization necessary here or not even useful because we dont want to normalize the r_pos and r_neg ratios: These are signal in a way. Only when comparing between real and background, we have to account for sample size for corrections
-  d3 = d %>%
-    dplyr::group_by(.data$peak_gene.p.raw.class, .data$r_positive) %>%
-    dplyr::summarise(n_real     = .data$n[class == !! (names(colors_vec)[1]) ],
-                     n_background = .data$n[class == !! (names(colors_vec)[2]) ]) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(ratio_real_raw = .data$n_real / .data$n_background,
-                  ratio_real_norm = .data$ratio_real_raw / normFactor_real,
-                  enrichment_real      = .data$n_real / (.data$n_real + .data$n_background),
-                  enrichment_real_norm = (.data$n_real / normFactor_real) / ((.data$n_real / normFactor_real) + .data$n_background)) 
-  
-  
-  stopifnot(identical(levels(d2$peak_gene.p.raw.class), levels(d3$peak_gene.p.raw.class)))
-  # 2 enrichment bar plots but combined using facet_wrap
-  d2$set = "r+ / r-"; d3$set = "real / background" 
-  d_merged <- tibble::tibble(peak_gene.p.raw.class = c(as.character(d2$peak_gene.p.raw.class), 
-                                                       as.character(d3$peak_gene.p.raw.class)),
-                             ratio = c(d2$ratio_pos_raw, d3$ratio_real_norm),
-                             classAll = c(as.character(d2$class), d3$r_positive),
-                             set = c(d2$set, d3$set)) %>%
-    dplyr::mutate(classAll = factor(.data$classAll, levels = c(paste0("real_",range), paste0("random_",range), "TRUE", "FALSE")),
-                  peak_gene.p.raw.class = factor(.data$peak_gene.p.raw.class, levels = levels(d2$peak_gene.p.raw.class)))
-  
-  d4 = tibble::tibble(peak_gene.p.raw.class = unique(d$peak_gene.p.raw.class), 
-                      n_rpos_real = NA_integer_, n_rpos_random = NA_integer_,
-                      n_rneg_real = NA_integer_, n_rneg_random = NA_integer_,
-                      ratio_background_real_rpos_norm = NA_real_,
-                      ratio_background_real_rneg_norm = NA_real_)
-  
-  for (i in seq_len(nrow(d4))) {
-    row_d2 = which(d2$class == networkType_details[1] & d2$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
-    stopifnot(length(row_d2) == 1)
-    d4[i, "n_rpos_real"] = d2[row_d2, "sum_pos"] %>% unlist()
-    d4[i, "n_rneg_real"] = d2[row_d2, "sum_neg"] %>% unlist()
-    row_d2 = which(d2$class == paste0("random_",range) & d2$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
-    d4[i, "n_rpos_random"] = d2[row_d2, "sum_pos"] %>% unlist()
-    d4[i, "n_rneg_random"] = d2[row_d2, "sum_neg"] %>% unlist()
-    
-    row_d3 = which(d3$r_positive == TRUE & d3$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
-    d4[i, "ratio_background_real_rpos_norm"] = 1 - d3[row_d3, "ratio_real_norm"] %>% unlist()
-    row_d3 = which(d3$r_positive == FALSE & d3$peak_gene.p.raw.class == d4$peak_gene.p.raw.class[i])
-    d4[i, "ratio_background_real_rneg_norm"] = 1 - d3[row_d3, "ratio_real_norm"] %>% unlist()
-  }
-  
-  d4 = d4 %>%
-    dplyr::mutate(ratio_rneg_rpos_real = .data$n_rneg_real / (.data$n_rneg_real + .data$n_rpos_real),
-                  ratio_rneg_rpos_random = .data$n_rneg_random / (.data$n_rneg_random + .data$n_rpos_random),
-                  peak_gene.p.raw.class.bin = as.numeric(.data$peak_gene.p.raw.class)) %>%
-    dplyr::arrange(.data$peak_gene.p.raw.class.bin)
-  
-  d4_melt = reshape2::melt(d4, id  = c("peak_gene.p.raw.class.bin", "peak_gene.p.raw.class")) %>%
-    dplyr::filter(grepl("ratio", .data$variable))
-  
-  
-  list(d = d, d2 = d2, d3 = d3, d4 = d4, d4_melt = d4_melt, d_merged = d_merged)
-  
-}
 
