@@ -166,7 +166,7 @@ for (res in resolutions){
       grn@connections$all.filtered$`0`
     }
   
-  if (nrow(grn) > 0){
+  #if (nrow(grn) > 0){
     grn <- as.data.frame(grn)
     if (links.to.validate == "all") { 
       names(grn)[5] <- "peak_gene.p_adj"
@@ -182,12 +182,12 @@ for (res in resolutions){
     # Set an FDR threshold to include peak-gene links below a certain significance threshold.
     
     # Set threshold for significant GRN links
-    GRN_FDR <- 0.05
+    GRN_FDR <- 0.1
     
     #Filter based on FDR and include only positive links
     grn <- grn %>%
       dplyr::filter(peak_gene.r > 0) %>%
-      dplyr::filter(peak_gene.p_adj < GRN_FDR)
+      dplyr::filter(peak_gene.p_adj < GRN_FDR) 
     
     # filter for GRN enhancers
     # Include the GRN enhancers that overlap with at least one significant eQTL SNP
@@ -238,12 +238,23 @@ for (res in resolutions){
     nrow(grn)
     
     # classify links as positive or negative
+    # grn_links_validated <- grn %>%
+    #   left_join(filt_enhancers, by = "peak.ID", multiple = "all") %>%
+    #   dplyr::rename(grn.gene = gene.ENSEMBL) %>%
+    #   dplyr::select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
+    #   group_by(peak.ID, grn.gene) %>%
+    #   case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, TRUE ~ FALSE))
+
     grn_links_validated <- grn %>%
-      left_join(filt_enhancers, by = "peak.ID", multiple = "all") %>%
+      left_join(filt_enhancers, by = "peak.ID") %>%
       dplyr::rename(grn.gene = gene.ENSEMBL) %>%
-      dplyr::select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
+      select(peak.ID, grn.gene, eqtl.gene, SNP, fdr) %>%
       group_by(peak.ID, grn.gene) %>%
-      mutate(link_validate = ifelse(grn.gene == eqtl.gene, TRUE, FALSE))  # case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, TRUE ~ FALSE))
+      mutate(link_validate = case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE,
+                                       TRUE ~ FALSE))
+
+    
+      #mutate(link_validate = ifelse(grn.gene == eqtl.gene, TRUE, FALSE))  # case_when(any(grn.gene == eqtl.gene, na.rm = T) ~ TRUE, TRUE ~ FALSE))
     
     # show the GRN links that can be tested and whether they are validated or not
     data.table(grn_links_validated, rownames = F, filter = "top", options = list(pageLength = 5, scrollX = T))
@@ -420,7 +431,7 @@ for (res in resolutions){
     # # filename <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/setup_outputs/or/",  dataset, "_", corr.method, "-FDR", eQTL.FDR, "_in_",
     # #                    res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
     # # write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
-  }
+  
 }
 
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
@@ -429,5 +440,3 @@ write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/",
 # The odds ratio of the GRN links over the random distance-matched links being validated by eQTLs is:
 # round(mean_or, digits = 3) 
 # (round(min_or, digits = 3) - round(max_or, digits = 3))
-
-
