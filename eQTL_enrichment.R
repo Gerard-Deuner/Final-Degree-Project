@@ -154,7 +154,7 @@ all.links <- all.links %>%
 resolutions <- c(c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2)))
 
 # iterate over GRNs
-#res <- 8
+
 for (res in resolutions){
   
   # read GRN (NOT THE GRN ITSELF BUT THE LINKS TABLE)
@@ -190,6 +190,7 @@ for (res in resolutions){
       dplyr::filter(peak_gene.r > 0) %>%
       dplyr::filter(peak_gene.p_adj < GRN_FDR) 
     
+    # nrow(grn)
     # filter for GRN enhancers
     # Include the GRN enhancers that overlap with at least one significant eQTL SNP
     # keep distinct enhancers in this GRN (GRanges object)
@@ -365,21 +366,21 @@ for (res in resolutions){
     nr_links_rand <- random_links_validated_all[[1]] %>% dplyr::select(peak.ID, random.gene) %>% distinct() %>% nrow()
 
     # Make figures output side by side
-    par(mar = c(4, 4, .1, .1))
+    #par(mar = c(4, 4, .1, .1))
 
     #Quick sanity check if the gene-distance sampling went okay
     # Removed it after implementing re-sampling to avoid having to add peak_gene.distance column
-    ggplot(grn) +
-      geom_histogram(aes(x=peak_gene.distance), fill = "white", col = "black", binwidth = 25000) +
-      theme_classic() +
-      ggtitle("Peak gene distance of GRN enhancer-gene pairs") +
-      xlab("Peak gene distance")
+    # ggplot(grn) +
+    #   geom_histogram(aes(x=peak_gene.distance), fill = "white", col = "black", binwidth = 25000) +
+    #   theme_classic() +
+    #   ggtitle("Peak gene distance of GRN enhancer-gene pairs") +
+    #   xlab("Peak gene distance")
 
-    ggplot(random_links_validated_all) +
-      geom_histogram(aes(x=peak_gene.distance), fill = "white", col = "black", binwidth = 25000) +
-      theme_classic() +
-      ggtitle("Peak gene distance of subsampled enhancer-gene pairs") +
-      xlab("Peak gene distance")
+    # ggplot(random_links_validated_all) +
+    #   geom_histogram(aes(x=peak_gene.distance), fill = "white", col = "black", binwidth = 25000) +
+    #   theme_classic() +
+    #   ggtitle("Peak gene distance of subsampled enhancer-gene pairs") +
+    #   xlab("Peak gene distance")
 
 
     # Number of enhancer-gene links based on random gene:
@@ -437,9 +438,21 @@ for (res in resolutions){
     filename <- paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/", dataset, "_", corr.method, "/or/",  dataset, "_", corr.method, "-FDR", eQTL.FDR, "_in_res.",
                        res, ".GRN", "-peak-gene-FDR", GRN_FDR,".txt")
     write.table(unlist(or), filename, sep = "\t", quote = F, col.names = F, row.names = F)
-  
+    
+    # create background validation binary df
+    links_back <- links
+    for (sam in as.factor(c(1:20))){
+      match <- mapply(function(col1_val, col2_val) {
+        any(random_links_validated_all[[as.numeric(sam)]]$random.gene == col1_val & random_links_validated_all[[as.numeric(sam)]]$peak.ID == col2_val)
+      }, links$gene, links$peak)
+    links_back[sam] = as.integer(as.logical(match))
+    }
+    
+    write.csv(links_back, paste0("/g/scb/zaugg/deuner/valdata/eQTL/", nature, "/", dataset, "_", corr.method, "/" , dataset, "_", corr.method, "_res.", res, "_", links.to.validate, "_eQTL_links.tsv"))
+    
   }
 }
+
 
 # write file (and create a dataset and corr.method -specific folder if it does not exist yet)
 write.csv(all.links, paste0("/g/scb/zaugg/deuner/valdata/eQTL/validated_links/", dataset, "_", corr.method, "_", links.to.validate, "_eQTL_links.tsv"))
