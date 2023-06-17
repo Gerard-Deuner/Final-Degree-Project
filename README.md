@@ -8,8 +8,10 @@ Also works as a version control.
 
 ### Brief Project Description
 
-write here the project description
+write here the project description (maybe abstract)
 
 ### Scripts Descriptions
 
 write here a description for each script
+
+(maybe include figure of GRN)
