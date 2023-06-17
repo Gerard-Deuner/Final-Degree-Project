@@ -15,3 +15,4 @@ write here the project description (maybe abstract)
 write here a description for each script
 
 (maybe include figure of GRN)
+![GRN_GRaNIE](https://github.com/Gerard-Deuner/Final-Degree-Project/assets/104646267/d218d1da-babc-46c8-81f9-6745fee9470c)
