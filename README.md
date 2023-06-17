@@ -1,4 +1,4 @@
-# Single-cell GRaNIE & Benchmark of single-cell eGRN Inference Approaches 
+# Benchmarking & Evaluating Single-cell Enhancer-Gene Regulatory Networks 
 
 ## Final Degree Project | Bachelor's Degree in Bioinformatics | ESCI-UPF
 
