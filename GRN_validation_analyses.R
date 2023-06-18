@@ -308,44 +308,43 @@ pg <- ggarrange(a, b, c, d, ncol = 2, nrow = 2, common.legend = TRUE, labels = "
 pg
 ggsave("/g/scb/zaugg/deuner/valdata/figures/PeakGeneRecovery.pdf", pg)
 
-# inspect res 18 of combined pearson nomicro
-val.df %>%
-  dplyr::filter(setting == "combined_pearson_nomicro") %>%
-  group_by(resolution) %>%
-  tally()
-
-# check GRN object
-grn18 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
-grn18@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
-grn18@connections$all.filtered$`0` %>% nrow
-grn20 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
-grn20@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
-grn20@connections$all.filtered$`0` %>% nrow
-
-# Check GRNs files
-GRN18 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
-nrow(GRN18)
-GRN16 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes16_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
-nrow(GRN16)
-GRN20 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
-nrow(GRN20)
-# This is correct
-
-# Check pcHi-C validated links
-pchic <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro.csv")
-pchic <- dplyr::select(pchic, -V1)
-
-pchic %>%
-  group_by(resolution) %>%
-  tally()
-
-pchic2 <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro_all.csv")
-pchic2 <- dplyr::select(pchic2, -V1)
-
-pchic2 %>%
-  group_by(resolution) %>%
-  tally()
-# Problem is here - check pchic validation file
+# # inspect res 18 of combined pearson nomicro
+# val.df %>%
+#   dplyr::filter(setting == "combined_pearson_nomicro") %>%
+#   group_by(resolution) %>%
+#   tally()
+# 
+# # check GRN object
+# grn18 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+# grn18@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
+# grn18@connections$all.filtered$`0` %>% nrow
+# grn20 <- qread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs"))
+# grn20@connections$peak_genes$`0` %>% dplyr::filter(peak_gene.p_raw < 0.05) %>% nrow
+# grn20@connections$all.filtered$`0` %>% nrow
+# 
+# # Check GRNs files
+# GRN18 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes18_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+# nrow(GRN18)
+# GRN16 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes16_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+# nrow(GRN16)
+# GRN20 <- fread(paste0("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_pearson_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes20_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz"))
+# nrow(GRN20)
+# # This is correct
+# 
+# # Check pcHi-C validated links
+# pchic <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro.csv")
+# pchic <- dplyr::select(pchic, -V1)
+# 
+# pchic %>%
+#   group_by(resolution) %>%
+#   tally()
+# 
+# pchic2 <- fread("/g/scb/zaugg/deuner/valdata/pcHi-C/validated_links/combined_pearson_nomicro_all.csv")
+# pchic2 <- dplyr::select(pchic2, -V1)
+# 
+# pchic2 %>%
+#   group_by(resolution) %>%
+#   tally()
 
 # Peak - Gene validation from eQTL data
 
@@ -437,7 +436,11 @@ tfp1 <- tfp1 + theme(legend.title=element_blank(),
 
 fp <- ggarrange(a, i, ggplot() + theme_transparent(), tfp1, common.legend = T, ncol = 2, nrow = 2)
 
-tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots", ".pdf"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots", ".tiff"), units="in", width=8.5, height=6, res=300, type = "cairo")
+fp
+dev.off()
+
+png(paste0("/g/scb/zaugg/deuner/figs/validation_plots", ".png"), units="in", width=8.5, height=6, res=300, type = "cairo")
 fp
 dev.off()
 
@@ -480,9 +483,7 @@ peakgene_dist <- ggplot(combined_data, aes(resolution, y = recoveredLINKs, group
   scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
   theme_bw() + 
   theme(legend.title = element_blank(),
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         plot.title = element_text(hjust = 0.5))
 
 # Display the plot
@@ -525,7 +526,8 @@ peakgene_ratio <- ggplot(combined_data_ratio, aes(resolution, y = ratio, group =
   scale_color_manual(values = colours) +
   scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
   theme_bw() + 
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
 # Display the plot
 peakgene_ratio
@@ -539,6 +541,9 @@ tfrecovery <- ggplot(val.df %>%
          summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
        aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity", col = "black") + 
+  geom_text(aes(label = recoveredTFPEAKs), vjust = -0.2,
+            position = position_dodge(width = 1)) + 
+  ylim(c(0, 10)) + 
   labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
   scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() + 
@@ -552,7 +557,7 @@ tfrecovery <- ggplot(val.df %>%
 
 all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("A", "B", "C")) 
 
-tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_unfiltered", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_unfiltered", ".tiff"), units="in", width=7, height=6, res=300, type = "cairo")
 all_plots
 dev.off()
 
@@ -909,9 +914,7 @@ peakgene_dist <- ggplot(combined_data, aes(resolution, y = recoveredLINKs, group
   scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
   theme_bw() + 
   theme(legend.title = element_blank(),
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         plot.title = element_text(hjust = 0.5))
 
 # Display the plot
@@ -954,7 +957,8 @@ peakgene_ratio <- ggplot(combined_data_ratio, aes(resolution, y = ratio, group =
   scale_color_manual(values = colours) +
   scale_linetype_manual(values = c("pcHi-C" = "solid", "eQTL" = "dashed")) +
   theme_bw() + 
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
 # Display the plot
 peakgene_ratio
@@ -968,6 +972,9 @@ tfrecovery <- ggplot(val.df %>%
                        summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
                      aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity", col = "black") + 
+  geom_text(aes(label = recoveredTFPEAKs), vjust = -0.2,
+            position = position_dodge(width = 1)) + 
+  ylim(0, 22) + 
   labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
   scale_fill_manual(values = colours, labels = labels) +  
   theme_bw() + 
@@ -977,11 +984,17 @@ tfrecovery <- ggplot(val.df %>%
         strip.text.y = element_blank(),
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting") 
-
+tfrecovery
 
 all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("E", "F", "G")) 
 
-tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_filtered", ".tiff"), units="in", width=6.4, height=4.8, res=300, type = "cairo")
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_filtered_efg", ".tiff"), units="in", width=7, height=6, res=300, type = "cairo")
+all_plots
+dev.off()
+
+all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("A", "B", "C")) 
+
+tiff(paste0("/g/scb/zaugg/deuner/figs/validation_plots_filtered_abc", ".tiff"), units="in", width=7, height=6, res=300, type = "cairo")
 all_plots
 dev.off()
 
@@ -1298,3 +1311,18 @@ for (r in resolutions){
   i <- i + 1
   }
 
+
+# eQTL error test #
+
+
+grn <- fread("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes8_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/connections_TFPeak0.2_peakGene0.1.tsv.gz")
+grn %>% select(peak.ID, gene.ENSEMBL) %>% distinct() %>% nrow()
+
+GRN <- qread("/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/output_pseudobulk_clusterRes8_RNA_limma_quantile_ATAC_DESeq2_sizeFactors/GRN.qs")
+GRN@connections$all.filtered$`0` %>% select(peak.ID, gene.ENSEMBL) %>% distinct() %>% nrow()
+
+
+eQTL.df %>% filter(resolution == 8, setting == "combined_spearman_nomicro_filtered_eQTL_links") %>% select(gene, peak) %>% distinct() %>% nrow()
+
+head(eQTL.df %>% filter(resolution == 8, setting == "combined_spearman_nomicro_filtered_eQTL_links"))
+head(grn %>% select(peak.ID, gene.ENSEMBL) %>% distinct())
