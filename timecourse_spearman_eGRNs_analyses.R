@@ -178,7 +178,18 @@ for (df in df_list){
 }
 
 colnames(all.links) <- resolutions
-all.links
+
+# check number of unique and shared links
+all.links.2 <- all.links
+all.links.2$sum <- all.links.2$`0.1` + all.links.2$`0.25` + all.links.2$`0.5` + all.links.2$`0.75` + all.links.2$`1` + all.links.2$`2` + 
+  all.links.2$`3` + all.links.2$`4` + all.links.2$`5` + all.links.2$`6` + all.links.2$`7` + all.links.2$`8` + all.links.2$`9` + 
+  all.links.2$`10` + all.links.2$`12` + all.links.2$`14` + all.links.2$`16` + all.links.2$`18` + all.links.2$`20`
+
+all.links.2 %>% dplyr::filter(sum == 1) %>% nrow()
+all.links.2 %>% dplyr::filter(sum > 9) %>% nrow() / all.links.2 %>% nrow()
+all.links.2 %>% nrow()
+
+all.links.2 %>% dplyr::filter(sum == 1) %>% nrow() / all.links.2 %>% nrow()
 
 # upset plot
 upset_all <- upset(all.links, sets = as.character(resolutions[1:length(resolutions)]), keep.order = TRUE, nintersects = NA)
@@ -220,10 +231,13 @@ upset_min15 <- UpSetR::upset(all.links.min3,
                             mb.ratio = c(0.5, 0.5), text.scale = 1,
                             keep.order = TRUE, show.numbers = TRUE) 
 
-
 tiff(paste0("/g/scb/zaugg/deuner/figs/upset_min15_cb_sp", ".tiff"), units="in", width=8, height=6, res=300, type = "cairo")
 upset_min15
 dev.off()
+
+library(patchwork)
+
+(pgrn | prgn.log) / (upset_min5) / (upset_min15)
 
 # all.links.min3 <- all.links %>% dplyr::filter(rowSums(.) > 5)
 # all.links.min3 %>% colnames() %>% class() == resolutions %>%  class()
