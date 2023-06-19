@@ -9,7 +9,7 @@ library(qs)
 library(ggplot2)
 library(ggpubr)
 
-# DISCLAIMER: This is a modification of GRaNIE original code
+# This is a modification of GRaNIE original code
 
 ####################
 # HELPER FUNCTIONS #
