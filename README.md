@@ -53,7 +53,7 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### :page_facing_up: **eQTL_enrichment.R**
   eQTL preprocessing and enrichment / validation analysis on network peak-gene links.
 * #### :page_facing_up: **GRN_validation_analyses.R**
-  Integration and visualitzation of networks validation.
+  Integration and visualization of networks validation.
 * #### GRaNPA
 * #### :page_facing_up: **GRaNPA_network_evalutation.R**
   Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
