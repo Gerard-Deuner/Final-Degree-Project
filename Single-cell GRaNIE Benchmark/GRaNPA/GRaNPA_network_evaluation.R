@@ -15,6 +15,9 @@ library(ggpubr)
 # MODIFY SOME FUNCTIONS #
 #########################
 
+# Function modifications of GRaNPA original code
+# Original code: https://git.embl.de/grp-zaugg/GRaNPA
+
 plot_GRaNPA_scatter_mod <- function(
     GRaNPA.object, ## this should be a object from prediction power pipeline.
     outputFolder,
