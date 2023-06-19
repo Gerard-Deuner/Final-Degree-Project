@@ -13,10 +13,6 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 #### Scripts Descriptions
 write here a description for each script
 
-<p align="right">
-  <img src="https://grp-zaugg.embl-community.io/GRaNIE/reference/figures/logo.png" />
-</p>
-
 ##### single cell-eGRN Inference Methods
   ###### single-cell GRaNIE
   ###### SCENIC+
