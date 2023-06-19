@@ -24,38 +24,38 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 ### Single-cell GRaNIE
 * #### :page_facing_up: **GRaNIE_batch_mode.R**
   Run GRaNIE in batch mode (across a wide range of cluster resolutions on the integrated WNN space) generating an eGRN per resolution.
-  #### :page_facing_up: **GRaNIE_specific_resolution.R**
+* #### :page_facing_up: **GRaNIE_specific_resolution.R**
   Run GRaNIE in for a specific cluster resolution.
-  #### :page_facing_up: **GRaNIE_helper_functions.R**
+* #### :page_facing_up: **GRaNIE_helper_functions.R**
   Helper functions to execute GRaNIE for single-cell datasets. Functions to preprocess the data, run GRaNIE for a specific metadata column and in batch mode.
-  #### :page_facing_up: **GRaNIE_metadata.R**
+* #### :page_facing_up: **GRaNIE_metadata.R**
   Run GRaNIE pseudobulking the cells according a metadata column e.g. celltype. 
-  #### :page_facing_up: **timecourse_scGRaNIE_test.R**
+* #### :page_facing_up: **timecourse_scGRaNIE_test.R**
   Run GRaNIE on the timecourse dataset for initial size tests, different cell type annotations and batch mode are utilized.
-  #### :page_facing_up: **network_enrichment_analysis.R**
+* #### :page_facing_up: **network_enrichment_analysis.R**
   Perform gene enrichment and TF enrichment analyses on a given eGRN.
-  #### :page_facing_up: **custom_peakgene_QC_plots.R**
+* #### :page_facing_up: **custom_peakgene_QC_plots.R**
   Customize GRaNIE original code that creates the peak-gene quality control plots in a qay that different eGRNs can be analyzed at the same time.   
-  #### :page_facing_up: **MergePeakGeneQCPDFs.sh**
+* #### :page_facing_up: **MergePeakGeneQCPDFs.sh**
   Create a single pdf document with the final peak-gene quality control plots for different eGRNs (each network-specific QC plot in a different page)
 
 
 ### single-cell GRaNIE Benchmark
-#### Validations 
-#### :page_facing_up: **ChiPSeq_setup.R**
+* #### Validations 
+* #### :page_facing_up: **ChiPSeq_setup.R**
   ChiP-seq data preprocessing. 
-#### :page_facing_up: **ChiPSeq_validation.R**
+* #### :page_facing_up: **ChiPSeq_validation.R**
   Validation of network TF-peak links with preprocessed ChiP-Seq data.
-#### :page_facing_up: **pcHiC_setup.R**
+* #### :page_facing_up: **pcHiC_setup.R**
   Promoter capture Hi-C data preprocessing.
-#### :page_facing_up: **pcHiC_validation.R**
+* #### :page_facing_up: **pcHiC_validation.R**
   Validation of network peak-gene links with preprocessed promoter capture Hi-C data.
-#### :page_facing_up: **eQTL_enrichment.R**
+* #### :page_facing_up: **eQTL_enrichment.R**
   eQTL preprocessing and enrichment / validation analysis on network peak-gene links.
-#### :page_facing_up: **GRN_validation_analyses.R**
+* #### :page_facing_up: **GRN_validation_analyses.R**
   Integration and visualitzation of networks validation.
-#### GRaNPA
-#### :page_facing_up: **GRaNPA_network_evalutation.R**
+* #### GRaNPA
+* #### :page_facing_up: **GRaNPA_network_evalutation.R**
   Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
   
 #### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
