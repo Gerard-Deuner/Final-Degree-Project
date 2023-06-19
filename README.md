@@ -9,8 +9,10 @@ Enhancer-inclusive gene regulatory networks allow us to characterize and provide
 We propose a way of benchmarking GRaNIE at the single-cell resolution through a validation-based approach that assesses the network's ability to predict real regulatory interactions from cell-type-specific promoter capture Hi-C, eQTL and ChIP-Seq data. Furthermore, we report further validation through a network biological comprehensive analysis alongside an evaluation of the eGRNs predictive power by means of GRaNPA, a machine learning framework that assesses the network's capability of  predicting cell-type-specific differential gene expression data. The results show GRaNIE, applied to single-cell hiPSC-neuron timecourse datasets, is capable of inferring neuronal differentiation and development relevant regulatory associations as well as predicting cell-type specific iPSC against neuron DGE at the single-cell level. 
 
 ## Scripts Descriptions
-#### Scripts distribution:
-* ##### Datasets Preprocessing - *Preprocessing of the timecourse and combined datasets.* 
+* ##### Datasets Preprocessing
+  *  :page_facing_up: timecourse_preprocessing.R
+     Preprocessing performed on the timecourse dataset.
+  Preprocessing of the timecourse and combined datasets 
 * ##### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
 * ##### single-cell GRaNIE Benchmark
   * ###### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
