@@ -2,8 +2,7 @@
 # HELPER FUNCTIONS FOR SINGLE-CELL GRaNIE  #
 ############################################
 
-# regress out mt.percent and ribo.perncent of SCT
-# choose between pearson or spearman correlation
+# This is a customized adaptation of GRaNIE's code for single-cell data for which I helped to update and fine tuned it for single-cell data.
 
 # prepapre the date (in normalisation step I regress out both mitochondrial and ribosomal genes)
 prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeuratObject = TRUE,
@@ -685,7 +684,7 @@ runGRaNIE <- function(dir_output = "output_GRaNIE",
   
   file_connections = paste0(dir_output, "/connections_TFPeak", TF_peak.fdr.threshold, "_peakGene", peak_gene.fdr.threshold, ".tsv.gz")
   
-  GRN = add_TF_gene_correlation(GRN, nCores = nCores)
+  GRN = add_TF_gene_correlation(GRN, nCores = nCores, corMethod = correlation.method)
   connections.df = getGRNConnections(GRN, 
                                      include_TF_gene_correlations = TRUE, 
                                      include_peakMetadata = TRUE, 
