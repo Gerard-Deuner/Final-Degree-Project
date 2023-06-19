@@ -18,6 +18,8 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   Extraction of raw data (RNA counts, ATAC counts, metadata) from the standardly preprocessed dataset-specific-seurat objects for further dataset-customized preprocessing.
 * #### :page_facing_up: **SeuratToAnndata.R**
   Conversion from seurat objects to AnnData objects to permit the usage of the preprocessed datasets for eGRN inference via SCENIC+ which is only available in Python/Scanpy.
+* #### :page_facing_up: **get_fragments_from_archr.R**
+  Get the ATAC fragments from the ArchR projects for each dataset.
 
 ### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
 ### single-cell GRaNIE Benchmark
