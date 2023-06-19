@@ -10,7 +10,7 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 
 ## Scripts Descriptions
 * #### Datasets Preprocessing
-  *  :page_facing_up: timecourse_preprocessing.R
+  *  :page_facing_up: **timecourse_preprocessing.R**
   
       Preprocessing performed on the timecourse dataset.
   Preprocessing of the timecourse and combined datasets 
