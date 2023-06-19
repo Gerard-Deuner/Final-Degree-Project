@@ -21,7 +21,9 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### :page_facing_up: **get_fragments_from_archr.R**
   Get the ATAC fragments from the ArchR projects for each dataset.
 
-### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
+### Single-cell GRaNIE
+* #### :page_facing_up: **GRaNIE_batch_mode.R**
+  Run GRaNIE in batch mode (across a wide range of cluster resolutions on the integrated WNN space) generating an eGRN per resolution. 
 ### single-cell GRaNIE Benchmark
 #### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
 #### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
