@@ -31,8 +31,13 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   #### :page_facing_up: **GRaNIE_metadata.R**
   Run GRaNIE pseudobulking the cells according a metadata column e.g. celltype. 
   #### :page_facing_up: **timecourse_scGRaNIE_test.R**
-  Run GRaNIE on the timecourse dataset for initial size tests, different cell type annotations and batch mode are utilized. 
-
+  Run GRaNIE on the timecourse dataset for initial size tests, different cell type annotations and batch mode are utilized.
+  #### :page_facing_up: **network_enrichment_analysis.R**
+  Perform gene enrichment and TF enrichment analyses on a given eGRN.
+  #### :page_facing_up: **custom_peakgene_QC_plots.R**
+  Customize GRaNIE original code that creates the peak-gene quality control plots in a qay that different eGRNs can be analyzed at the same time.   
+  #### :page_facing_up: **MergePeakGeneQCPDFs.sh**
+  Create a single pdf document with the final peak-gene quality control plots for different eGRNs (each network-specific QC plot in a different page)
 
 
 ### single-cell GRaNIE Benchmark
