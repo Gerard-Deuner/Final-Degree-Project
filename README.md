@@ -41,9 +41,13 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 
 
 ### single-cell GRaNIE Benchmark
+#### Validations 
+#### :page_facing_up: **chip_setup.R**
+  ChiP-seq data preprocessing.  
+  
 #### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
 #### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
-#### Validations - *Validation analyses on GRaNIE networks using promoter capture Hi-C, eQTL and ChIP-Seq data.*
+
 #### GRaNPA - *Validation analyses on GRaNIE networks using GRaNPA.*
 ### single cell-eGRN Inference Methods
 #### SCENIC+
