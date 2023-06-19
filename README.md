@@ -12,13 +12,13 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 #### Scripts distribution:
 * ##### single-cell GRaNIE 
 * ##### single-cell GRaNIE Benchmark
-  ###### * Correlation Method Analysis
-  ###### * Overlap Analysis
-  ###### Validations
-  ###### GRaNPA
-##### single cell-eGRN Inference Methods
-  ###### SCENIC+
-  ###### Pando
+  * ###### Correlation Method Analysis
+  * ###### Overlap Analysis
+  * ###### Validations
+  * ###### GRaNPA
+* ##### single cell-eGRN Inference Methods
+  * ###### SCENIC+
+  * ###### Pando
 
 
 
