@@ -14,6 +14,8 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   Preprocessing performed on the timecourse dataset.
 * #### :page_facing_up: **combined_preprocessing.R**
   Preprocessing performed on the combined dataset.
+* #### :page_facing_up: **data_extraction.R**
+  Extraction of raw data (RNA counts, ATAC counts, metadata) from the standardly preprocessed dataset-specific-seurat objects.
 
 ### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
 ### single-cell GRaNIE Benchmark
