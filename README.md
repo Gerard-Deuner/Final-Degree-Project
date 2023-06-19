@@ -42,13 +42,26 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 
 ### single-cell GRaNIE Benchmark
 #### Validations 
-#### :page_facing_up: **chip_setup.R**
-  ChiP-seq data preprocessing.  
+#### :page_facing_up: **ChiPSeq_setup.R**
+  ChiP-seq data preprocessing. 
+#### :page_facing_up: **ChiPSeq_validation.R**
+  Validation of network TF-peak links with preprocessed ChiP-Seq data.
+#### :page_facing_up: **pcHiC_setup.R**
+  Promoter capture Hi-C data preprocessing.
+#### :page_facing_up: **pcHiC_validation.R**
+  Validation of network peak-gene links with preprocessed promoter capture Hi-C data.
+#### :page_facing_up: **eQTL_enrichment.R**
+  eQTL preprocessing and enrichment / validation analysis on network peak-gene links.
+#### :page_facing_up: **GRN_validation_analyses.R**
+  Integration and visualitzation of networks validation.
+#### GRaNPA
+#### :page_facing_up: **GRaNPA_network_evalutation.R**
+  Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
   
 #### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
 #### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
 
-#### GRaNPA - *Validation analyses on GRaNIE networks using GRaNPA.*
+
 ### single cell-eGRN Inference Methods
 #### SCENIC+
 #### Pando
