@@ -56,7 +56,10 @@ timecourse.s <- qread(paste0(work.dir, "inputdata/timecourse.seuratObject.qs"))
 # visualize the preprocessed data 
 # Visualize QC metrics as a violin plot
 Idents(timecourse.s) <- timecourse.s@meta.data$orig.ident
-VlnPlot(timecourse.s, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+vln <- ggarrange(VlnPlot(timecourse.s, features = c("nFeature_RNA"), ncol = 1) + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), legend.position = "None"), 
+  VlnPlot(timecourse.s, features = c("nCount_RNA"), ncol = 1) + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), legend.position = "None"),
+  VlnPlot(timecourse.s, features = c("percent.mt"), ncol = 1) + theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(), legend.position = "None"), ncol = 3)
+vln
 
 # Define QC thresholds
 nfeatures.threshold <- 11500
@@ -64,12 +67,17 @@ percent.mt.threshold <- 15
 
 # Visualize some more metrics
 plot1 <- FeatureScatter(timecourse.s, feature1 = "nCount_RNA", feature2 = "percent.mt") + 
-  geom_hline(yintercept=percent.mt.threshold, linetype="dashed", color = "darkred")
+  geom_hline(yintercept=percent.mt.threshold, linetype="dashed", color = "darkred") + theme(legend.position = "None") + labs(title = "") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 plot2 <- FeatureScatter(timecourse.s, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + 
-  geom_hline(yintercept=nfeatures.threshold, linetype="dashed", color = "darkred")
+  geom_hline(yintercept=nfeatures.threshold, linetype="dashed", color = "darkred") + theme(legend.position = "None") + labs(title = "") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 plot3 <- FeatureScatter(timecourse.s, feature1 = "nCount_RNA", feature2 = "percent.ribo") + 
-  geom_hline(yintercept=15, linetype="dashed", color = "darkred")
-plot1 + plot2 + plot3
+  geom_hline(yintercept=15, linetype="dashed", color = "darkred") + theme(legend.position = "None") + labs(title = "") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+p_all <- plot1 + plot2 + plot3
+
+ggarrange(vln, p_all, nrow = 2)
 
 # Remove some outliers (just 3)
 timecourse.s <- subset(timecourse.s, subset = nFeature_RNA < nfeatures.threshold)
@@ -93,13 +101,14 @@ plot1
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # Read seurat object
-timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
+timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs")) 
 
 # PCA
-DimPlot(timecourse.s, reduction = "pca")
+DimPlot(timecourse.s, reduction = "pca") + theme(legend.position = "None") + labs(x = "PC 1", y = "PC 2")
 
 # Visualize if data clusters by some technical variable
 FeaturePlot(timecourse.s, reduction = "pca", features = c("nCount_RNA", "nFeature_RNA", "percent.mt", "percent.ribo"))
+FeaturePlot(timecourse.s, reduction = "pca", features = c("percent.mt")) + labs(x = "PC 1", y = "PC 2")
 
 # Analyze PCs
 VizDimLoadings(timecourse.s, dims = 1:4, reduction = "pca")
@@ -128,7 +137,7 @@ timecourse.s <- FindNeighbors(timecourse.s, k.param = 10, dims = 1:15, annoy.met
 timecourse.s <-FindClusters(timecourse.s, res = 0.5, algorithm = 1, graph.name = "SCT_nn")
 timecourse.s <- RunUMAP(timecourse.s, umap.method = "umap-learn", dims = 1:15, min.dist = 0.5, spread = 1, negative.sample.rate = 5, 
                         n.epochs = NULL, n.components = 2, learning.rate = 1) 
-DimPlot(timecourse.s, reduction = "umap", label = TRUE)
+DimPlot(timecourse.s, reduction = "umap", label = F) + labs(x = "UMAP 1", y = "UMAP 2")
 
 # Save seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
@@ -138,6 +147,7 @@ timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
 
 # Visualize if data clusters by some technical variable
 FeaturePlot(timecourse.s, reduction = "umap", features = c("nCount_RNA", "nFeature_RNA", "percent.mt", "percent.ribo"))
+FeaturePlot(timecourse.s, reduction = "umap", features = c("percent.mt")) + labs(x = "UMAP 1", y = "UMAP 2")
 
 ## Cell Type annotation
 
@@ -282,9 +292,14 @@ diff.markers <- unique(c("AADC", "DAT", "LMX1B", "MAP2", "SOX2", "SOX1", "MAP2A"
                          "TH", "CHAT"))
 FeaturePlot(timecourse.s, reduction = "umap", features = diff.markers) + labs(caption = "differentiating cells markers")
 
+DefaultAssay(timecourse.s) <- "SCT"
+
+
 # cells treated with BDNF
 FeaturePlot(timecourse.s, reduction = "umap", features = "POU4F1") + labs(caption = "Cells treated with BDNF")
 
+
+FeaturePlot(timecourse.s, reduction = "umap", features = c("DPPA4","NES","DCX","MAP2", "CD163L1"))
 
 ##############################################
 # establish a cell type annotation consensus #
@@ -327,7 +342,7 @@ basic.cluster.ids <- c("diff", #0
 # Add new cell annotation to the Seurat Object
 names(new.cluster.ids) <- levels(timecourse.s)
 timecourse.s <- RenameIdents(timecourse.s, new.cluster.ids)
-DimPlot(timecourse.s, reduction = "umap", label = T, pt.size = 0.5)
+DimPlot(timecourse.s, reduction = "umap", label = T, pt.size = 0.5, repel = T) + labs(x = "UMAP 1", y = "UMAP 2")
 
 timecourse.s <- timecourse.s %>% AddMetaData(metadata = Idents(timecourse.s), col.name = "celltype")
 names(basic.cluster.ids) <- new.cluster.ids
@@ -341,6 +356,8 @@ p1 <- DimPlot(timecourse.s, reduction = "umap", group.by = "basic_celltype", lab
 p2 <- DimPlot(timecourse.s, reduction = "umap", group.by = "celltype", label = TRUE, label.size = 2.5, repel = TRUE) + ggtitle("Accurate Cell Type Annotation") +
   theme(plot.title = element_text(hjust = 0.5))
 p1 | p2
+DimPlot(timecourse.s, reduction = "umap", group.by = "basic_celltype", label = T, pt.size = 0.5, repel = T) + labs(x = "UMAP 1", y = "UMAP 2")
+
 
 # Save seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.norm.seuratObject.qs"))
@@ -406,9 +423,10 @@ cds_from_seurat <- learn_graph(cds_from_seurat, use_partition = F)
 # visualize trajectory analysis
 plot_cells(cds_from_seurat, 
            color_cells_by = "cluster",
-           label_groups_by_cluster=TRUE,
+           label_groups_by_cluster=F,
            label_leaves=FALSE,
-           label_branch_points=TRUE,
+           label_branch_points=F,
+           label_cell_groups = F,
            graph_label_size=4)+ 
   ggtitle("Timecourse - Trajectory Analyses") + 
   theme(legend.position = "right", plot.title = element_text(hjust = 0.5))
@@ -440,12 +458,12 @@ genes <- graph_test(cds_from_seurat, neighbor_graph = "principal_graph", cores =
 
 genes %>% 
   arrange(q_value) %>%
-  filter(status == "OK") %>%
+  dplyr::filter(status == "OK") %>%
   head()
 
 gene.names <- genes %>% 
   arrange(q_value) %>%
-  filter(status == "OK") %>%
+  dplyr::filter(status == "OK") %>%
   head() %>%
   rownames()
 
@@ -479,7 +497,7 @@ timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 
 
 ########################
-# ATAC REPREPROCESSING # (needed because we have filtered out some cells)
+# ATAC REPREPROCESSING #
 ########################
 
 # set the ATAC assay as the default assay
@@ -510,12 +528,14 @@ p3 <- DimPlot(timecourse.s, reduction = "umap", group.by = "celltype", label = F
 p4 <- DimPlot(timecourse.s, reduction = "umap.atac", group.by = "celltype", label = FALSE)  + ggtitle("ATAC")
 p3 + p4
 
+DimPlot(timecourse.s, reduction = "umap.atac", group.by = "celltype", label = T, repel = TRUE) +  ggtitle("ATAC") + theme(legend.position = "None")
+
 # Check whether any technical variable drives the UMAP representation
 FeaturePlot(timecourse.s, reduction = "umap.atac", features = c("nCount_ATAC", "nFeature_ATAC", "percent.mt", "percent.ribo"))
 
 
 ############################
-# JOINT EMBEDDING WITH WNN # (with new RNA and ATAC preprocessed data)
+# JOINT EMBEDDING WITH WNN #
 ############################
 
 timecourse.s <- FindMultiModalNeighbors(timecourse.s, reduction.list = list("pca", "lsi"), dims.list = list(1:20, 2:20))
@@ -530,6 +550,8 @@ p1 + p2 + p3 & NoLegend() & theme(plot.title = element_text(hjust = 0.5))
 
 DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "orig.ident", label = TRUE, label.size = 2.5, repel = TRUE) + ggtitle("WNN") + 
   DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "wsnn_res.0.8", label = TRUE, label.size = 2.5, repel = TRUE) + ggtitle("WNN")
+
+DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "wsnn_res.0.8", label = TRUE, repel = TRUE) + ggtitle("WNN")
 
 # Save seurat object
 qsave(timecourse.s, paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
@@ -572,6 +594,8 @@ p2 <- DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "celltype_wnn", l
 p1 | p2
 p2
 
+DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "celltype_wnn", label = T, label.size = 3.5, repel = TRUE) + ggtitle("WNN Cell Annotation") + theme(legend.position = "None")
+
 # Add sampleID column 
 timecourse.s$sampleID <- timecourse.s$orig.ident
 
@@ -591,7 +615,15 @@ timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 # Read the seurat
 timecourse.s <- qread(paste0(work.dir, "tmp/timecourse.pp.seuratObject.qs"))
 
-DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "wsnn_res.5", label = TRUE, label.size = 2.5, repel = TRUE) + theme(legend.position = "none")
+DimPlot(timecourse.s, reduction = "wnn.umap", group.by = "pseudotime", label = T, repel = TRUE) + 
+  labs(x = "UMAP 1", y = "UMAP 2") + 
+  theme(legend.position = "None",
+    plot.title = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank())
+
+
 
 # remove microglia and very small clusters
 timecourse.s2 <- timecourse.s %>%
@@ -657,6 +689,3 @@ Idents(timecourse.s2) <- "celltype_wnn"
 
 # Save seurat object
 qsave(timecourse.s2, paste0(work.dir, "tmp/timecourse.pp.nomicro.seuratObject.qs"))
-
-# Read the seurat
-timecourse.s2 <- qread(paste0(work.dir, "tmp/timecourse.pp.nomicro.seuratObject.qs"))
