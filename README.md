@@ -25,7 +25,9 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### :page_facing_up: **GRaNIE_batch_mode.R**
   Run GRaNIE in batch mode (across a wide range of cluster resolutions on the integrated WNN space) generating an eGRN per resolution.
   #### :page_facing_up: **GRaNIE_specific_resolution.R**
-  Run GRaNIE in for a specific cluster resolution. 
+  Run GRaNIE in for a specific cluster resolution.
+  #### :page_facing_up: **GRaNIE_helper_functions.R**
+  Helper functions to execute GRaNIE for single-cell datasets. Functions to preprocess the data, run GRaNIE for a specific metadata column and in batch mode. 
 ### single-cell GRaNIE Benchmark
 #### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
 #### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
