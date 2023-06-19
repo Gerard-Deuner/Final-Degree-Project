@@ -14,15 +14,15 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   Preprocessing performed on the timecourse dataset.
 
 
-* #### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
-* #### single-cell GRaNIE Benchmark
-  * ##### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
-  * ##### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
-  * ##### Validations - *Validation analyses on GRaNIE networks using promoter capture Hi-C, eQTL and ChIP-Seq data.*
-  * ##### GRaNPA - *Validation analyses on GRaNIE networks using GRaNPA.*
-* #### single cell-eGRN Inference Methods
-  * ##### SCENIC+
-  * ##### Pando
+### single-cell GRaNIE - *Implementation and execution of GRaNIE at the single-cell level.* 
+### single-cell GRaNIE Benchmark
+#### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
+#### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
+#### Validations - *Validation analyses on GRaNIE networks using promoter capture Hi-C, eQTL and ChIP-Seq data.*
+#### GRaNPA - *Validation analyses on GRaNIE networks using GRaNPA.*
+### single cell-eGRN Inference Methods
+#### SCENIC+
+#### Pando
 
 
 
