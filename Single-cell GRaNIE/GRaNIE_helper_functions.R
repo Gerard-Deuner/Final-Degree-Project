@@ -3,6 +3,7 @@
 ############################################
 
 # This is a customized adaptation of GRaNIE's code for single-cell data for which I helped to update and fine tuned it for single-cell data.
+# Original code: https://git.embl.de/grp-zaugg/GRaNIE
 
 # prepapre the date (in normalisation step I regress out both mitochondrial and ribosomal genes)
 prepareSeuratData_GRaNIE <- function(seu.s, outputDir = "pseudobulk", saveSeuratObject = TRUE,
