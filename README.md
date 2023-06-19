@@ -57,9 +57,7 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### GRaNPA
 * #### :page_facing_up: **GRaNPA_network_evalutation.R**
   Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
-  
-#### Correlation Method Analysis - *Pearson and Spearman correlation comparison on GRaNIE at the single-cell level.*
-#### Overlap Analysis - *Overlap analysis of GRaNIE across resolutions.*
+* #### eGRN Analyses
 
 
 ### single cell-eGRN Inference Methods
