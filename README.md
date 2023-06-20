@@ -38,6 +38,8 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   Customize GRaNIE original code that creates the peak-gene quality control plots in a qay that different eGRNs can be analyzed at the same time.   
 * #### :page_facing_up: **MergePeakGeneQCPDFs.sh**
   Create a single pdf document with the final peak-gene quality control plots for different eGRNs (each network-specific QC plot in a different page)
+* #### :page_facing_up: **CRISPR_screen_GRaNIE.R**
+  Run GRaNIE for separate scRNA and scATAC modalities for a NPC-Neuron datasets perturbed for a set of Schizophrenia markers.
 
 
 ### single-cell GRaNIE Benchmark
@@ -60,6 +62,16 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### :page_facing_up: **RNA_preprocessing_DGE_analysis.R**
   Bulk RNA preprocessing and DGE analysis from an independent hiPSC to Neuron time course dataset.  
 * #### eGRN Analyses
+* #### :page_facing_up: **Network_visualizations.R**
+  Visualization of a GRaNIE network and TF/Gene enichment analyses.
+* #### :page_facing_up: **celltype_GRNstats_comparison.R**
+  Comparison of the effects of different cell-type annotations on GRaNIE networks.
+* #### :page_facing_up: **pearson_vs_spearman_analysis.R**
+  In depth study of pearson and spearman correlation algorithms for links inference in GRaNIE.
+* #### :page_facing_up: **extensive_GRaNIE_networks_analyses.R**
+  GRaNIE networks analyses based on pseudobulking resolutions, overlaps on links across resolutions, networks general stats, pcHi-C validations, robust links and pcHI-C validated links relationhsip, and further pearson vs spearman correlation analysis.
+* #### :page_facing_up: **overlap_analysis.R**
+  Overlap analysis of different type of links (TF-peak-gene, TF-peak and peak-gene) across cluster resolutions.  
 
 ### single cell-eGRN Inference Methods
 * #### SCENIC+
