@@ -23,7 +23,7 @@ library(ggrepel)
 #############################################
 
 # Set up path of the cluster resolutions eGRNs
-path <- "/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/combined_batch_mode_spearman_nomicro/Batch_Mode_Outputs/"
+path <- "/g/scb/zaugg/deuner/GRaNIE/outputdata/batch_mode/timecourse_batch_mode_spearman_nomicro/Batch_Mode_Outputs/"
 
 # set vector with the resolutions
 resolutions <- c(0.1, seq(0.25, 1, 0.25), seq(2,10,1), seq(12,20,2))
