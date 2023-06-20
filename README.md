@@ -57,6 +57,8 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 * #### GRaNPA
 * #### :page_facing_up: **GRaNPA_network_evalutation.R**
   Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
+* #### :page_facing_up: **RNA_preprocessing_DGE_analysis.R**
+  Bulk RNA preprocessing and DGE analysis from an independent hiPSC to Neuron time course dataset.  
 * #### eGRN Analyses
 
 ### single cell-eGRN Inference Methods
