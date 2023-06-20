@@ -59,10 +59,29 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
   Networks evaluation for predicting cell-type-specific DGE using GRaNPA.
 * #### eGRN Analyses
 
-
 ### single cell-eGRN Inference Methods
-#### SCENIC+
-#### Pando
+* #### SCENIC+
+* #### :page_facing_up: **scRNA-seq_Preprocessing.ipynb**
+  Timecourse RNA preprocessing using Scanpy.
+* #### :page_facing_up: **scRNA-seq_setup_timecourse.ipynb**
+  Import the preprocessed timecourse Anndata objects and format it for further steps.
+* #### :page_facing_up: **scATAC-seq_preprocessing_timecourse.ipynb**
+  Generate pseudobulk ATAC-seq profiles, call peaks and generate a consensus peak set for the timecourse dataset.
+* #### :page_facing_up: **timecourse_cistopic.ipynb**
+  Perform CisTopic modelling, candidate enhancer regions inference, motif enrichment analysis using pycisTarget for the timecourse dataset.
+* #### :page_facing_up: **timecourse_scenicplus.ipynb**
+  eGRN inference using SCENIC+ on the timecourse dataset and further network analysis.
+* #### :page_facing_up: **scRNA-seq_setup_combined.ipynb**
+  Import the preprocessed combined Anndata objects and format it for further steps.
+* #### :page_facing_up: **scATAC-seq_preprocessing_combined.ipynb**
+  Generate pseudobulk ATAC-seq profiles, call peaks and generate a consensus peak set for the combined dataset.
+* #### :page_facing_up: **combined_cistopic.ipynb**
+  Perform CisTopic modelling, candidate enhancer regions inference, motif enrichment analysis using pycisTarget for the combined dataset.
+* #### :page_facing_up: **combined_scenicplus.ipynb**
+  eGRN inference using SCENIC+ on the combined dataset and further network analysis.
+* #### Pando
+* #### :page_facing_up: **Pando.R**
+  eGRN inference using the Pando method. 
 
 
 
