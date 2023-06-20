@@ -85,6 +85,4 @@ We propose a way of benchmarking GRaNIE at the single-cell resolution through a 
 
 
 
-**The scripts descriptions can be found within each respective directory.** 
-
 
