@@ -5,6 +5,8 @@
 ## Source of the data: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE118307
 ## Paper: https://www.sciencedirect.com/science/article/pii/S2405471218303582?via%3Dihub
 
+# Done it for: Day4 vs. Day0, Day4 vs. Day2, Day2 vs. Day0.
+
 # Load packages
 library(edgeR)  # 'edgeR' also loads 'limma' 
 library(EnsDb.Hsapiens.v86)
@@ -72,20 +74,20 @@ fviz_pca_ind(PCA, addEllipses = F,
 #          annotation_col = as.data.frame(colData(se)))
 
 # Create design matrix and contrast matrix of iPSCs (day 0) vs mature neurons (day 4)
-d2d0_se <- se[,se$day %in% c(2, 0)]
-day <- as.factor(d2d0_se$day)
+d4d0_se <- se[,se$day %in% c(4, 0)]
+day <- as.factor(d4d0_se$day)
 design <- model.matrix(~0 + day)
 #colnames(design)[1:2] <- levels(day)
 head(design)
 
 contrast <- makeContrasts(
-  day2 - day0,
+  day4 - day0,
   levels = colnames(design)
 )
 contrast
 
 # Remove mean-variance relationship from count data
-y <- voom(dgl[, dgl$samples$day %in% c(2,0)], design, plot = TRUE)
+y <- voom(dgl[, dgl$samples$day %in% c(4,0)], design, plot = TRUE)
 
 
 # Fit linear models for all pairwise comparisons
@@ -132,4 +134,4 @@ DE <- results %>%
   dplyr::inner_join(annotLookup, by = "gene") %>%
   dplyr::select(ENSEMBL = gene.ENSEMBL, padj, logFC)
 
-fwrite(DE, paste0(dir, "DE_timecourse_Day2vsDay0.tsv"))
+fwrite(DE, paste0(dir, "DE_timecourse_Day4vsDay0.tsv"))
