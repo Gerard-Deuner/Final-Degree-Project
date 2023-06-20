@@ -538,10 +538,16 @@ tfrecovery <- ggplot(val.df %>%
          dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
          dplyr::select(resolution, setting, validated) %>%  # remove useless columns
          group_by(setting, resolution) %>% # group the data by resolution and setting
-         summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
-       aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
+         summarise(recoveredTFPEAKs = sum(validated)) %>% # count number of TFs recovered per each resolution and setting
+         cbind(TF = val.df %>% 
+                 dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
+                 distinct(gene, resolution, validated, setting) %>%
+                 dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                 group_by(setting, resolution) %>% # group the data by resolution and setting
+                 summarise(recoveredTFs = sum(validated)) %>% pull(recoveredTFs)), 
+      aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity", col = "black") + 
-  geom_text(aes(label = recoveredTFPEAKs), vjust = -0.2,
+  geom_text(aes(label = TF), vjust = -0.2,
             position = position_dodge(width = 1)) + 
   ylim(c(0, 10)) + 
   labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
@@ -554,6 +560,8 @@ tfrecovery <- ggplot(val.df %>%
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting") 
   
+
+
 
 all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("A", "B", "C")) 
 
@@ -969,10 +977,16 @@ tfrecovery <- ggplot(val.df %>%
                        dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
                        dplyr::select(resolution, setting, validated) %>%  # remove useless columns
                        group_by(setting, resolution) %>% # group the data by resolution and setting
-                       summarise(recoveredTFPEAKs = sum(validated)), # count number of TFs recovered per each resolution and setting
+                       summarise(recoveredTFPEAKs = sum(validated)) %>%
+                       cbind(TF = val.df %>% 
+                               dplyr::filter(validation == "ChiP-seq") %>% # want to measure frequency of recoveries, Also restrain background to Chip-seq TFs
+                               distinct(gene, resolution, validated, setting) %>%
+                               dplyr::select(resolution, setting, validated) %>%  # remove useless columns
+                               group_by(setting, resolution) %>% # group the data by resolution and setting
+                               summarise(recoveredTFs = sum(validated)) %>% pull(recoveredTFs)), # count number of TFs recovered per each resolution and setting
                      aes(resolution, y = recoveredTFPEAKs , group = setting, fill = setting)) + 
   geom_bar(stat = "identity", col = "black") + 
-  geom_text(aes(label = recoveredTFPEAKs), vjust = -0.2,
+  geom_text(aes(label = TF), vjust = -0.2,
             position = position_dodge(width = 1)) + 
   ylim(0, 22) + 
   labs(y = "", x = "Cluster Resolutions", title = "TF-peak Recovery") +
@@ -985,6 +999,11 @@ tfrecovery <- ggplot(val.df %>%
         plot.title = element_text(hjust = 0.5)) +
   facet_grid("setting") 
 tfrecovery
+
+# which are these TFs?
+val.df %>% 
+  dplyr::filter(validation == "ChiP-seq", validated == 1, setting == "timecourse_spearman_nomicro_filtered") %>%
+  distinct(gene, resolution, validated, setting)
 
 all_plots <- ggarrange(peakgene_dist, tfrecovery, peakgene_ratio, common.legend = T, labels = c("E", "F", "G")) 
 
